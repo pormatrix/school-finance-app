@@ -1,0 +1,2699 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมการเงินโรงเรียน v2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f4f7f6; /* Softer background color */
+        }
+        .modal {
+            display: none; position: fixed; z-index: 100;
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.6);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: #ffffff; padding: 30px; border-radius: 12px; /* Softer radius */
+            width: 90%; max-width: 700px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .close-button {
+            color: #9ca3af; float: right; font-size: 32px; font-weight: bold; cursor: pointer;
+            transition: color 0.2s ease-in-out;
+        }
+        .close-button:hover, .close-button:focus { color: #374151; }
+        .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
+        .table-container::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        /* General input styling */
+        input[type="text"], input[type="number"], input[type="date"], select, textarea {
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 0.625rem 0.75rem; /* Adjusted padding */
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            font-size: 0.95rem;
+            color: #374151; /* gray-700 */
+        }
+        input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        /* Specific styling for the main navigation dropdown */
+        #tabDropdownNav {
+            padding: 0.75rem 1.25rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background-color: white;
+            color: #374151;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%; /* Make dropdown full width on mobile */
+        }
+        @media (min-width: 768px) { /* On medium screens and up, make it less wide */
+            #tabDropdownNav {
+                width: auto;
+                min-width: 250px;
+            }
+        }
+
+
+        input[type="file"] {
+            padding: 0.625rem;
+            border: 1px dashed #d1d5db;
+        }
+        input[type="file"]::file-selector-button {
+            margin-right: 0.75rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.375rem;
+            border: 0;
+            font-weight: 500;
+            background-color: #f3f4f6; /* gray-100 */
+            color: #3b82f6; /* blue-600 */
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background-color: #e5e7eb; /* gray-200 */
+        }
+
+
+        /* Button styling */
+        .btn {
+            padding: 0.625rem 1.5rem; /* Slightly more padding for better touch targets */
+            border-radius: 0.5rem; /* rounded-lg */
+            font-weight: 600; /* Bolder */
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+            font-size: 0.95rem;
+            text-transform: uppercase; /* Professional touch */
+            letter-spacing: 0.025em;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary { background-color: #2563eb; color: white; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #64748b; color: white; }
+        .btn-secondary:hover { background-color: #475569; }
+        .btn-success { background-color: #10b981; color: white; } /* emerald-500 */
+        .btn-success:hover { background-color: #059669; } /* emerald-600 */
+        .btn-danger { background-color: #ef4444; color: white; } /* red-500 */
+        .btn-danger:hover { background-color: #dc2626; } /* red-600 */
+        .btn-warning { background-color: #f59e0b; color: white; }
+        .btn-warning:hover { background-color: #d97706; }
+        .btn-info { background-color: #0ea5e9; color: white; }
+        .btn-info:hover { background-color: #0284c7; }
+        .btn-purple { background-color: #8b5cf6; color: white; } /* violet-500 */
+        .btn-purple:hover { background-color: #7c3aed; } /* violet-600 */
+        .btn-teal { background-color: #14b8a6; color: white; } /* teal-500 */
+        .btn-teal:hover { background-color: #0d9488; } /* teal-700 */
+        .btn-lime { background-color: #65a30d; color: white; } /* lime-500 */
+        .btn-lime:hover { background-color: #4d7c0f; } /* lime-700 */
+        .btn-pink { background-color: #ec4899; color:white; } /* pink-500 */
+        .btn-pink:hover { background-color: #db2777; } /* pink-600 */
+
+
+        /* Tab styling - old buttons removed, dropdown styled above */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+
+        /* Table styling */
+        .table-container table {
+            font-size: 0.9rem;
+        }
+        .table-container th {
+            background-color: #f3f4f6; /* gray-100 */
+            color: #1f2937; /* gray-800 */
+            font-weight: 600;
+            padding: 0.875rem 1.25rem;
+            border-bottom: 2px solid #e5e7eb; /* gray-200 */
+        }
+        .table-container td {
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid #f3f4f6; /* gray-100 */
+            color: #374151; /* gray-700 */
+        }
+        .table-container tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .table-container tbody tr:hover {
+            background-color: #eff6ff; /* blue-50 */
+        }
+
+
+        @media (max-width: 768px) {
+            .table-container table thead { display: none; }
+            .table-container table, .table-container table tbody, .table-container table tr, .table-container table td {
+                display: block; width: 100%;
+            }
+            .table-container table tr {
+                margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1rem; background-color: #fff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            .table-container table td {
+                text-align: right; padding-left: 45%; position: relative; border-bottom: none; padding-top: 0.75rem; padding-bottom: 0.75rem;
+            }
+            .table-container table td::before {
+                content: attr(data-label); position: absolute; left: 1rem; width: calc(45% - 1.25rem); padding-right: 0.5rem; font-weight: 600; text-align: left; white-space: nowrap; color: #1f2937;
+            }
+        }
+
+        .prepare-for-capture {
+            padding: 10px !important;
+            background-color: white !important;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        .prepare-for-capture .hidden.print\:block {
+            display: block !important;
+        }
+        .prepare-for-capture .no-print {
+             display: none !important;
+        }
+        .prepare-for-capture.printing-project-register .col-fund-type-hide-print {
+             display: none !important;
+        }
+        .prepare-for-capture.printing-payment-voucher-register .col-loan-details-hide-print {
+            display: none !important;
+        }
+        .prepare-for-capture table {
+            font-size: 8pt !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+        }
+        .prepare-for-capture.printing-project-register table,
+        .prepare-for-capture.printing-payment-voucher-register table {
+            font-size: 10pt !important;
+        }
+         .prepare-for-capture th, .prepare-for-capture td {
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            border: 1px solid #ccc !important;
+            padding: 4px !important;
+        }
+        .prepare-for-capture thead {
+             display: table-header-group !important;
+        }
+         .prepare-for-capture th {
+            background-color: #f0f0f0 !important;
+        }
+
+
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 1cm;
+            }
+            body.printing-project-register-portrait @page,
+            body.printing-payment-voucher-register-portrait @page {
+                size: A4 portrait;
+            }
+            body.printing-landscape @page {
+                size: A4 landscape;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                background-color: white !important;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body > *:not(.print-area-container),
+            main > *:not(.tab-content.active .print-area-container),
+            .tab-content:not(.active),
+            .print-area-container > *:not(.print-area) {
+                display: none !important;
+                visibility: hidden !important;
+            }
+            .print-area-container {
+                 visibility: visible !important;
+                 display: block !important;
+                 width: 100% !important;
+                 height: auto !important;
+            }
+            .print-area, .print-area * {
+                visibility: visible !important;
+            }
+            .print-area {
+                position: static !important;
+                width: 100% !important;
+                height: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background-color: white !important;
+                box-shadow: none !important;
+            }
+            .print-area .hidden.print\:block {
+                display: block !important;
+                visibility: visible !important;
+            }
+            .print-area .no-print, .print-area .col-fund-type-hide-print {
+                display: none !important;
+            }
+            .print-area .table-container {
+                overflow: visible !important;
+                box-shadow: none !important;
+                margin-top: 0.5cm;
+            }
+            .print-area table {
+                width: 100%;
+                border-collapse: collapse !important;
+                font-size: 8pt;
+                table-layout: auto;
+            }
+            .print-area.printing-project-register table,
+            .print-area.printing-payment-voucher-register table {
+                font-size: 10pt !important;
+            }
+            .print-area th, .print-area td {
+                border: 1px solid #333 !important;
+                padding: 4px !important;
+                text-align: left !important;
+                word-wrap: break-word !important;
+                background-color: white !important;
+                color: black !important;
+            }
+            .print-area thead {
+                display: table-header-group !important;
+            }
+            .print-area th {
+                background-color: #e9ecef !important;
+                font-weight: bold !important;
+            }
+            .print-area h2, .print-area h3 {
+                text-align: center !important;
+                color: black !important;
+                margin-bottom: 10px !important;
+            }
+            .print-area h2 { font-size: 12pt !important; }
+            .print-area h3 { font-size: 10pt !important; }
+        }
+        /* User Manual Specific Styles */
+        #contentUserManual .manual-content {
+            max-height: calc(100vh - 250px); /* Adjust as needed */
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: #f9fafb; /* Slightly off-white for manual content area */
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+        }
+        #contentUserManual h2 {
+            font-size: 1.75rem; /* text-2xl */
+            font-weight: 600; /* semibold */
+            color: #1f2937; /* gray-800 */
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #0ea5e9; /* sky-500 */
+        }
+        #contentUserManual h3 {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600;
+            color: #374151; /* gray-700 */
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+         #contentUserManual h4 {
+            font-size: 1.1rem; /* text-lg */
+            font-weight: 600;
+            color: #4b5563; /* gray-600 */
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        #contentUserManual p {
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+            color: #4b5563; /* gray-600 */
+        }
+        #contentUserManual ul {
+            list-style-type: disc;
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #4b5563;
+        }
+        #contentUserManual li {
+            margin-bottom: 0.25rem;
+        }
+        #contentUserManual strong {
+            font-weight: 600;
+            color: #1f2937; /* gray-800 */
+        }
+        #contentUserManual code {
+            background-color: #e5e7eb; /* gray-200 */
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center p-4 md:p-6">
+
+    <header class="w-full max-w-7xl mb-8 text-center no-print">
+        <h1 class="text-3xl md:text-4xl font-bold text-slate-800">โปรแกรมการเงินโรงเรียน v2</h1>
+    </header>
+
+    <div id="messageBox" class="message-box no-print"></div>
+
+    <main class="w-full max-w-7xl bg-white p-4 md:p-8 rounded-xl shadow-2xl">
+        <nav class="mb-6 border-b border-slate-200 no-print">
+            <div class="flex justify-center md:justify-start">
+                <select id="tabDropdownNav" class="shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                    <option value="homePage">หน้าแรก (สรุป)</option>
+                    <option value="projectRegister">ทะเบียนคุมรายงานเงินโครงการ</option>
+                    <option value="paymentControl">ทะเบียนคุมการจ่าย (บจ.)</option>
+                    <option value="loanAgreements">รายจ่าย: สัญญายืมเงิน (บย.)</option>
+                    <option value="loanRepaymentEvidence">หลักฐาน ส่งใช้เงินยืม (บค.)</option>
+                    <option value="paymentVoucherRegister">ทะเบียนคุมใบสำคัญจ่าย (บส.)</option>
+                    <option value="loanDebtorRegister">ทะเบียนคุมลูกหนี้เงินยืม</option>
+                    <option value="userManual">คู่มือการใช้งาน</option>
+                </select>
+            </div>
+        </nav>
+
+        <div id="contentHomePage" class="tab-content active">
+            <section class="mb-6 no-print">
+                <h2 class="text-xl md:text-2xl font-semibold text-slate-700 mb-4">การจัดการข้อมูล และ ปีงบประมาณ</h2>
+                <div class="bg-slate-50 p-4 rounded-lg shadow-sm border border-slate-200">
+                    <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3 mb-4">
+                        <select id="fiscalYearSelect" class="w-full sm:flex-grow shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </select>
+                        <button id="addFiscalYearBtn" class="btn btn-success w-full sm:w-auto">
+                            เพิ่มปีงบประมาณ
+                        </button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                         <button id="backupDataBtn" class="btn btn-info w-full sm:w-auto">
+                            Backup ข้อมูลทั้งหมด
+                        </button>
+                        <button id="triggerImportBtn" class="btn btn-warning w-full sm:w-auto">
+                            Import ข้อมูลทั้งหมด
+                        </button>
+                        <input type="file" id="importFile" accept=".json" class="hidden">
+                    </div>
+                </div>
+            </section>
+            <hr class="my-8 border-slate-200 no-print">
+            <section>
+                <h2 class="text-xl md:text-2xl font-semibold text-slate-700 mb-4">สรุปภาพรวมงบประมาณ (<span id="homeFiscalYearDisplay" class="font-semibold text-blue-600">N/A</span>)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 md:p-6 rounded-lg shadow-lg h-72 md:h-80">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3 text-center">สรุปยอดรวมโครงการ</h3>
+                        <canvas id="overallBudgetChart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 md:p-6 rounded-lg shadow-lg h-72 md:h-80">
+                        <h3 class="text-lg font-semibold text-slate-700 mb-3 text-center">สรุปงบประมาณตามประเภทเงิน (โครงการ)</h3>
+                         <canvas id="fundTypeProjectChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="contentProjectRegister" class="tab-content">
+            <section>
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 no-print">
+                    <h3 class="text-xl md:text-2xl font-semibold text-slate-700 mb-2 sm:mb-0">รายการโครงการ</h3>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-3 sm:mt-0 w-full sm:w-auto">
+                        <button id="addProjectBtn" class="btn btn-primary w-full sm:w-auto">
+                            เพิ่มรายการโครงการ
+                        </button>
+                        <button id="importCsvBtn" class="btn btn-warning w-full sm:w-auto">
+                            นำเข้า CSV
+                        </button>
+                        <button id="exportProjectRegisterExcelBtn" class="btn btn-success w-full sm:w-auto no-print">
+                            สร้าง Excel
+                        </button>
+                        <button id="printProjectRegisterBtn" class="btn btn-purple w-full sm:w-auto no-print">
+                            สร้าง PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="print-area-container">
+                    <div class="table-container overflow-x-auto bg-white rounded-lg shadow print-area" id="projectRegisterPrintArea">
+                        <h2 class="text-xl font-bold text-center mb-4 hidden print:block">ทะเบียนคุมรายงานเงินโครงการ</h2>
+                        <h3 id="projectRegisterPrintFiscalYear" class="text-lg text-center mb-4 hidden print:block"></h3>
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ลำดับ</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">รายการ</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider col-fund-type-hide-print">ประเภทเงิน</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">จำนวนเงินตามโครงการ (บาท)</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">จำนวนเงินที่ใช้ไป (บาท)</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">จำนวนเงินคงเหลือ (บาท)</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider no-print">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projectTableBody" class="bg-white divide-y divide-slate-200">
+                                <tr><td colspan="7" class="px-6 py-4 text-center text-slate-500" data-label="ข้อมูล">ยังไม่มีข้อมูลโครงการสำหรับปีงบประมาณนี้</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="contentPaymentControl" class="tab-content">
+            <section>
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 no-print">
+                    <h2 class="text-xl md:text-2xl font-semibold text-slate-700 mb-2 sm:mb-0">ทะเบียนคุมการจ่าย (บจ.)</h2>
+                    <div class="flex space-x-2">
+                        <button id="addPaymentControlBtn" class="btn btn-lime w-full sm:w-auto">
+                            เพิ่มรายการจ่าย (บจ.)
+                        </button>
+                        <button id="exportPaymentControlExcelBtn" class="btn btn-success w-full sm:w-auto no-print">
+                            สร้าง Excel
+                        </button>
+                        <button id="printPaymentControlBtn" class="btn btn-purple w-full sm:w-auto no-print">
+                            สร้าง PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="print-area-container">
+                    <div class="print-area" id="paymentControlPrintArea">
+                        <h2 class="text-xl font-bold text-center mb-2 hidden print:block">ทะเบียนคุมการจ่าย (บจ.)</h2>
+                        <h3 id="paymentControlPrintFiscalYear" class="text-lg text-center mb-4 hidden print:block"></h3>
+                        <div class="table-container overflow-x-auto bg-white rounded-lg shadow">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เลขที่ บจ.</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">วันที่จ่าย</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">รายการจ่าย</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">จ่ายให้</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">จ่ายจากโครงการ</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">จำนวนเงิน</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">หมายเหตุ</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider no-print">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="paymentControlTableBody" class="bg-white divide-y divide-slate-200">
+                                    <tr><td colspan="8" class="px-6 py-4 text-center text-slate-500" data-label="ข้อมูล">ยังไม่มีข้อมูลการจ่าย (บจ.)</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+
+        <div id="contentLoanAgreements" class="tab-content">
+            <section>
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 no-print">
+                    <h2 class="text-xl md:text-2xl font-semibold text-slate-700 mb-2 sm:mb-0">บันทึกสัญญา ยืมเงิน (บย.)</h2>
+                     <div class="flex space-x-2">
+                        <button id="addLoanAgreementBtn" class="btn btn-info w-full sm:w-auto">
+                            เพิ่มสัญญายืมเงินใหม่
+                        </button>
+                        <button id="exportLoanAgreementsExcelBtn" class="btn btn-success w-full sm:w-auto no-print">
+                            สร้าง Excel
+                        </button>
+                        <button id="printLoanAgreementsBtn" class="btn btn-purple w-full sm:w-auto no-print">
+                            สร้าง PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="print-area-container">
+                    <div class="print-area" id="loanAgreementsPrintArea">
+                        <h2 class="text-xl font-bold text-center mb-2 hidden print:block">รายการสัญญายืมเงิน (บย.)</h2>
+                        <h3 id="loanAgreementsPrintFiscalYear" class="text-lg text-center mb-4 hidden print:block"></h3>
+                        <div class="table-container overflow-x-auto bg-white rounded-lg shadow">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เลขที่สัญญา</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">วันที่</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ชื่อผู้ยืม</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ตำแหน่ง</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ยื่นต่อ</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">โครงการ</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">จำนวนเงินยืม</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ยอดคืนแล้ว</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ยอดคงค้าง</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider no-print">ดำเนินการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="loanAgreementTableBody" class="bg-white divide-y divide-slate-200">
+                                    <tr><td colspan="10" class="px-6 py-4 text-center text-slate-500" data-label="ข้อมูล">ยังไม่มีข้อมูลสัญญายืมเงิน</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="contentLoanRepaymentEvidence" class="tab-content">
+            <section>
+                <h2 class="text-xl md:text-2xl font-semibold text-slate-700 mb-6 no-print">แบบฟอร์ม หลักฐาน ส่งใช้เงินยืม (บค.)</h2>
+                <form id="loanRepaymentEvidenceForm" class="space-y-4 bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto no-print">
+                    <div>
+                        <label for="repaymentEvidenceNo" class="block text-sm font-medium text-gray-700">เลขที่คืนเงิน (เช่น บค.001/2567):</label>
+                        <input type="text" id="repaymentEvidenceNo" name="repaymentEvidenceNo" class="w-full" required>
+                    </div>
+                    <div>
+                        <label for="repaymentEvidenceLoanId" class="block text-sm font-medium text-gray-700">เลือกสัญญายืมเงิน (บย.):</label>
+                        <select id="repaymentEvidenceLoanId" name="repaymentEvidenceLoanId" class="w-full" required>
+                            <option value="">-- เลือกสัญญายืมเงินที่มียอดค้าง --</option>
+                        </select>
+                    </div>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="repaymentEvidenceDate" class="block text-sm font-medium text-gray-700">วันที่คืนเงิน:</label>
+                            <input type="date" id="repaymentEvidenceDate" name="repaymentEvidenceDate" class="w-full" required>
+                        </div>
+                        <div>
+                            <label for="repaymentEvidenceAmount" class="block text-sm font-medium text-gray-700">จำนวนเงินที่คืน (บาท):</label>
+                            <input type="number" id="repaymentEvidenceAmount" name="repaymentEvidenceAmount" step="0.01" min="0" class="w-full" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="repaymentEvidenceFile" class="block text-sm font-medium text-gray-700">แนบหลักฐาน (ถ้ามี):</label>
+                        <input type="file" id="repaymentEvidenceFile" name="repaymentEvidenceFile" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="btn btn-teal">บันทึกหลักฐานการคืนเงิน</button>
+                    </div>
+                </form>
+                <div class="flex justify-end my-4 no-print space-x-2">
+                     <button id="exportLoanRepaymentEvidenceExcelBtn" class="btn btn-success no-print">
+                        สร้าง Excel
+                    </button>
+                    <button id="printLoanRepaymentEvidenceBtn" class="btn btn-purple">
+                        สร้าง PDF
+                    </button>
+                </div>
+                <div class="print-area-container">
+                    <div class="print-area" id="loanRepaymentEvidencePrintArea">
+                        <h2 class="text-xl font-bold text-center mb-2 hidden print:block">รายการหลักฐานส่งใช้เงินยืม (บค.)</h2>
+                        <h3 id="loanRepaymentEvidencePrintFiscalYear" class="text-lg text-center mb-4 hidden print:block"></h3>
+                        <div class="table-container overflow-x-auto bg-white rounded-lg shadow">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เลขที่ บค.</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">วันที่คืน</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เลขที่สัญญายืม (บย.)</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ผู้ยืม</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">จำนวนเงินคืน</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ชื่อไฟล์หลักฐาน</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider no-print">ลบ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="loanRepaymentEvidenceTableBody" class="bg-white divide-y divide-slate-200">
+                                    <tr><td colspan="7" class="px-6 py-4 text-center text-slate-500" data-label="ข้อมูล">ยังไม่มีข้อมูลหลักฐานการส่งใช้เงินยืม</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="contentPaymentVoucherRegister" class="tab-content">
+            <section>
+                 <div class="flex justify-between items-center mb-4 no-print">
+                    <h2 class="text-xl md:text-2xl font-semibold text-slate-700">ทะเบียนคุมใบสำคัญจ่าย (บส.)</h2>
+                    <div class="flex space-x-2">
+                        <button id="exportPaymentVoucherRegisterExcelBtn" class="btn btn-success no-print">
+                            สร้าง Excel
+                        </button>
+                        <button id="printPaymentVoucherRegisterBtn" class="btn btn-pink">
+                            สร้าง PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="print-area-container">
+                    <div class="print-area" id="paymentVoucherRegisterPrintArea">
+                        <h2 class="text-xl font-bold text-center mb-2 hidden print:block">ทะเบียนคุมใบสำคัญจ่าย (บส.)</h2>
+                        <h3 id="paymentVoucherRegisterPrintFiscalYear" class="text-lg text-center mb-4 hidden print:block"></h3>
+                        <div class="table-container overflow-x-auto bg-white rounded-lg shadow">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ว/ด/ป</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เลขที่ บค.</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เลขที่ บจ.</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">รายการ</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">หมายเหตุ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="paymentVoucherRegisterTableBody" class="bg-white divide-y divide-slate-200">
+                                     <tr><td colspan="5" class="px-6 py-4 text-center text-slate-500" data-label="ข้อมูล">ยังไม่มีข้อมูลใบสำคัญจ่าย</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+
+        <div id="contentLoanDebtorRegister" class="tab-content">
+            <section>
+                <div class="flex justify-between items-center mb-4 no-print">
+                    <h2 class="text-xl md:text-2xl font-semibold text-slate-700">ทะเบียนคุมลูกหนี้เงินยืม</h2>
+                     <div class="flex space-x-2">
+                        <button id="exportLoanDebtorRegisterExcelBtn" class="btn btn-success no-print">
+                            สร้าง Excel
+                        </button>
+                        <button id="printLoanDebtorRegisterBtn" class="btn btn-info">
+                            สร้าง PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="print-area-container">
+                    <div class="print-area" id="loanDebtorRegisterPrintArea">
+                         <h2 class="text-xl font-bold text-center mb-2 hidden print:block">ทะเบียนคุมลูกหนี้เงินยืม</h2>
+                         <h3 id="printFiscalYearInfo" class="text-lg text-center mb-4 hidden print:block"></h3>
+                        <div class="table-container overflow-x-auto bg-white rounded-lg shadow">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ว/ด/ป (สัญญา)</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เลขที่สัญญา (บย.)</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ชื่อสกุลผู้ยืม</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ยืมจากโครงการ</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">วัตถุประสงค์</th>
+                                        <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">จำนวนเงินยืม</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">วันครบกำหนด</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">วันส่งใช้ล่าสุด</th>
+                                        <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ยอดคืนแล้ว</th>
+                                        <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ยอดคงค้าง</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="loanDebtorRegisterTableBody" class="bg-white divide-y divide-slate-200">
+                                     <tr><td colspan="10" class="px-6 py-4 text-center text-slate-500" data-label="ข้อมูล">ยังไม่มีข้อมูลลูกหนี้เงินยืม</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="contentUserManual" class="tab-content">
+            <section>
+                <div class="manual-content prose max-w-none">
+                    <h2 class="text-2xl font-semibold text-slate-700 mb-4">คู่มือการใช้งานโปรแกรมการเงินโรงเรียน v2</h2>
+
+                    <h3>1. ภาพรวมโปรแกรม</h3>
+                    <p>โปรแกรมการเงินโรงเรียน v2 เป็นเครื่องมือสำหรับช่วยจัดการข้อมูลทางการเงินเบื้องต้นของโรงเรียน ออกแบบมาให้ใช้งานง่ายโดยทำงานบนเว็บเบราว์เซอร์โดยตรง ข้อมูลทั้งหมดจะถูกจัดเก็บไว้ในเครื่องคอมพิวเตอร์ของผู้ใช้งาน (ผ่าน <code>localStorage</code> ของเบราว์เซอร์) โปรแกรมมีความสามารถหลักๆ ดังนี้:</p>
+                    <ul>
+                        <li><strong>การจัดการปีงบประมาณ:</strong> เพิ่มและเลือกปีงบประมาณเพื่อจัดการข้อมูลแยกตามปี</li>
+                        <li><strong>ทะเบียนคุมรายงานเงินโครงการ:</strong> บันทึกโครงการ, งบประมาณ, รายการใช้จ่ายของโครงการ (ผ่าน บจ. และ บย.), และติดตามยอดคงเหลือ</li>
+                        <li><strong>ทะเบียนคุมการจ่าย (บจ.):</strong> บันทึกรายการจ่ายเงินโดยตรงจากโครงการ</li>
+                        <li><strong>รายจ่าย: สัญญายืมเงิน (บย.):</strong> บันทึกสัญญายืมเงิน, ติดตามยอดเงินยืม, และบันทึกการคืนเงิน</li>
+                        <li><strong>หลักฐาน ส่งใช้เงินยืม (บค.):</strong> บันทึกหลักฐานการส่งใช้คืนเงินยืม</li>
+                        <li><strong>ทะเบียนคุมใบสำคัญจ่าย (บส.):</strong> แสดงรายการใบสำคัญจ่ายทั้งหมดที่เกิดจาก บค. และ บจ.</li>
+                        <li><strong>ทะเบียนคุมลูกหนี้เงินยืม:</strong> ติดตามสถานะลูกหนี้จากสัญญายืมเงิน</li>
+                        <li><strong>สรุปภาพรวม:</strong> แสดงกราฟสรุปงบประมาณและค่าใช้จ่ายในหน้าแรก</li>
+                        <li><strong>การสำรองและนำเข้าข้อมูล:</strong> สามารถ Backup ข้อมูลทั้งหมดเป็นไฟล์ JSON และ Import กลับเข้าระบบได้</li>
+                        <li><strong>การส่งออกข้อมูล:</strong> สามารถสร้างไฟล์ PDF และ Excel สำหรับทะเบียนคุมต่างๆ ได้</li>
+                    </ul>
+
+                    <h3>2. การเริ่มต้นใช้งาน</h3>
+                    <p>โปรแกรมนี้เป็นไฟล์ HTML เดียว คุณไม่จำเป็นต้องติดตั้งโปรแกรมใดๆ เพิ่มเติม</p>
+                    <ol class="list-decimal ml-6">
+                        <li><strong>ดาวน์โหลดไฟล์โปรแกรม:</strong> ตรวจสอบให้แน่ใจว่าคุณมีไฟล์โปรแกรมล่าสุด (เช่น <code>school_finance_app_v2.html</code>)</li>
+                        <li><strong>บันทึกไฟล์:</strong> บันทึกไฟล์ <code>.html</code> นี้ลงในคอมพิวเตอร์ของคุณ ในตำแหน่งที่คุณจำได้ง่าย (เช่น บน Desktop หรือในโฟลเดอร์เอกสาร)</li>
+                        <li><strong>เปิดโปรแกรม:</strong> ดับเบิลคลิกที่ไฟล์ <code>.html</code> นั้น ไฟล์จะเปิดขึ้นในเว็บเบราว์เซอร์เริ่มต้นของคุณ (เช่น Google Chrome, Firefox, Microsoft Edge) และคุณก็พร้อมใช้งานโปรแกรม</li>
+                    </ol>
+                    <p><strong>ข้อควรทราบ:</strong></p>
+                    <ul>
+                        <li><strong>การเชื่อมต่ออินเทอร์เน็ต:</strong> ในการเปิดใช้งานครั้งแรก หรือหากเบราว์เซอร์ของคุณยังไม่ได้ดาวน์โหลดไลบรารีภายนอก (เช่น Tailwind CSS, Chart.js) อาจจำเป็นต้องเชื่อมต่ออินเทอร์เน็ตเพื่อให้หน้าตาโปรแกรมแสดงผลสมบูรณ์ หลังจากนั้นหากไลบรารีถูก cache ไว้แล้ว อาจใช้งานแบบออฟไลน์ได้บางส่วน</li>
+                        <li><strong>ข้อมูลถูกเก็บในเครื่อง:</strong> ข้อมูลทั้งหมดจะถูกบันทึกไว้ใน <code>localStorage</code> ของเบราว์เซอร์ที่คุณใช้เปิดโปรแกรมบนเครื่องคอมพิวเตอร์นั้นๆ</li>
+                    </ul>
+
+                    <h3>3. ส่วนประกอบหลักของหน้าจอ</h3>
+                    <h4>3.1. เมนูนำทาง (Navigation)</h4>
+                    <p>เมนูหลักของโปรแกรมจะอยู่ด้านบนสุด เป็นแบบ <strong>Dropdown Menu</strong> ให้คุณเลือกแท็บที่ต้องการใช้งาน:</p>
+                    <ul>
+                        <li><strong>หน้าแรก (สรุป):</strong> แสดงภาพรวมงบประมาณและกราฟสรุป (เป็นหน้าเริ่มต้น)</li>
+                        <li><strong>ทะเบียนคุมรายงานเงินโครงการ:</strong> จัดการข้อมูลโครงการและงบประมาณ</li>
+                        <li><strong>ทะเบียนคุมการจ่าย (บจ.):</strong> บันทึกรายการจ่ายเงินโดยตรง</li>
+                        <li><strong>รายจ่าย: สัญญายืมเงิน (บย.):</strong> จัดการสัญญายืมเงิน</li>
+                        <li><strong>หลักฐาน ส่งใช้เงินยืม (บค.):</strong> บันทึกหลักฐานการคืนเงินยืม</li>
+                        <li><strong>ทะเบียนคุมใบสำคัญจ่าย (บส.):</strong> ดูภาพรวมใบสำคัญจ่ายทั้งหมด</li>
+                        <li><strong>ทะเบียนคุมลูกหนี้เงินยืม:</strong> ติดตามสถานะลูกหนี้</li>
+                        <li><strong>คู่มือการใช้งาน:</strong> แสดงคู่มือการใช้งานนี้</li>
+                    </ul>
+                    <h4>3.2. การจัดการข้อมูล และ ปีงบประมาณ (บนหน้าแรก)</h4>
+                    <p>ส่วนนี้จะอยู่ที่แท็บ "หน้าแรก (สรุป)" และใช้สำหรับจัดการข้อมูลหลักของโปรแกรม:</p>
+                    <ul>
+                        <li><strong>Dropdown เลือกปีงบประมาณ:</strong> ใช้เลือกปีงบประมาณที่ต้องการดูหรือจัดการข้อมูล ข้อมูลในทุกแท็บจะอ้างอิงจากปีงบประมาณที่เลือกตรงนี้</li>
+                        <li><strong>ปุ่ม "เพิ่มปีงบประมาณ":</strong> คลิกเพื่อเปิดหน้าต่างสำหรับกรอกข้อมูลปีงบประมาณใหม่ (ชื่อปี, วันที่เริ่มต้น, วันที่สิ้นสุด)</li>
+                        <li><strong>ปุ่ม "Backup ข้อมูลทั้งหมด":</strong> คลิกเพื่อดาวน์โหลดข้อมูลทั้งหมดของโปรแกรม (ทุกปีงบประมาณ ทุกทะเบียน) ออกมาเป็นไฟล์ <code>.json</code> ควรทำเป็นประจำเพื่อสำรองข้อมูล</li>
+                        <li><strong>ปุ่ม "Import ข้อมูลทั้งหมด":</strong> คลิกเพื่อเลือกไฟล์ <code>.json</code> ที่ได้จากการ Backup เพื่อนำข้อมูลกลับเข้าระบบ (ระบบจะถามเพื่อยืนยันก่อนเขียนทับข้อมูลเดิม)</li>
+                    </ul>
+
+                    <h3>4. การใช้งานแต่ละเมนู (แท็บ)</h3>
+                    <h4>4.1. หน้าแรก (สรุป)</h4>
+                    <ul>
+                        <li>แสดงปีงบประมาณปัจจุบันที่เลือก</li>
+                        <li>แสดงกราฟสรุปยอดรวมโครงการ (งบประมาณทั้งหมด, ใช้ไปทั้งหมด, คงเหลือทั้งหมด)</li>
+                        <li>แสดงกราฟสรุปงบประมาณตามประเภทเงินของโครงการ</li>
+                    </ul>
+                    <h4>4.2. ทะเบียนคุมรายงานเงินโครงการ</h4>
+                    <ul>
+                        <li><strong>การดูข้อมูล:</strong> ตารางจะแสดงรายการโครงการทั้งหมดของปีงบประมาณที่เลือก พร้อมรายละเอียดงบประมาณ ยอดใช้ไป และยอดคงเหลือ</li>
+                        <li><strong>ปุ่ม "เพิ่มรายการโครงการ":</strong> เปิดหน้าต่างสำหรับกรอกข้อมูลโครงการใหม่ (ลำดับ, ชื่อรายการ, ประเภทเงิน, จำนวนเงินตามโครงการ)</li>
+                        <li><strong>ปุ่ม "นำเข้า CSV":</strong> นำเข้าข้อมูลโครงการจากไฟล์ CSV (ไฟล์ควรมี 2 คอลัมน์: รายการ และ จำนวนเงินตามโครงการ)</li>
+                        <li><strong>ปุ่ม "สร้าง Excel":</strong> ส่งออกข้อมูลในตารางนี้เป็นไฟล์ Excel (<code>.xlsx</code>)</li>
+                        <li><strong>ปุ่ม "สร้าง PDF":</strong> สร้างไฟล์ PDF ของทะเบียนคุมรายงานเงินโครงการ (สำหรับปีงบประมาณที่เลือก) โดยจะแสดงผลในแนวตั้ง A4 และซ่อนคอลัมน์ "ประเภทเงิน" และ "จัดการ"</li>
+                        <li><strong>คอลัมน์ "จัดการ":</strong>
+                            <ul>
+                                <li><strong>ไอคอนรูปดินสอ (แก้ไข):</strong> แก้ไขข้อมูลโครงการนั้นๆ</li>
+                                <li><strong>ไอคอนรูปถังขยะ (ลบ):</strong> ลบโครงการ (จะลบได้ก็ต่อเมื่อโครงการนั้นยังไม่มีการผูกกับรายการจ่าย บจ. หรือสัญญายืมเงิน บย.)</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <h4>4.3. ทะเบียนคุมการจ่าย (บจ.)</h4>
+                     <ul>
+                        <li><strong>การดูข้อมูล:</strong> ตารางแสดงรายการจ่ายเงินโดยตรง (บจ.) ทั้งหมดของปีงบประมาณที่เลือก</li>
+                        <li><strong>ปุ่ม "เพิ่มรายการจ่าย (บจ.)":</strong> เปิดหน้าต่างสำหรับบันทึกรายการจ่ายใหม่ (เลขที่ บจ., วันที่จ่าย, รายการจ่าย, จ่ายให้, จ่ายจากโครงการ, จำนวนเงิน, หมายเหตุ)</li>
+                        <li><strong>ปุ่ม "สร้าง Excel":</strong> ส่งออกข้อมูลในตารางนี้เป็นไฟล์ Excel</li>
+                        <li><strong>ปุ่ม "สร้าง PDF":</strong> สร้างไฟล์ PDF ของทะเบียนคุมการจ่าย (บจ.)</li>
+                        <li><strong>คอลัมน์ "จัดการ":</strong>
+                            <ul>
+                                <li><strong>ไอคอนรูปดินสอ (แก้ไข):</strong> แก้ไขรายการจ่ายนั้นๆ</li>
+                                <li><strong>ไอคอนรูปถังขยะ (ลบ):</strong> ลบรายการจ่ายนั้นๆ (การลบจะส่งผลต่อยอดใช้ไปของโครงการที่เกี่ยวข้อง)</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <h4>4.4. รายจ่าย: สัญญายืมเงิน (บย.)</h4>
+                    <ul>
+                        <li><strong>การดูข้อมูล:</strong> ตารางแสดงรายการสัญญายืมเงินทั้งหมดของปีงบประมาณที่เลือก พร้อมยอดคืนและยอดคงค้าง</li>
+                        <li><strong>ปุ่ม "เพิ่มสัญญายืมเงินใหม่":</strong> เปิดหน้าต่างสำหรับบันทึกสัญญายืมเงินใหม่</li>
+                        <li><strong>ปุ่ม "สร้าง Excel":</strong> ส่งออกข้อมูลในตารางนี้เป็นไฟล์ Excel</li>
+                        <li><strong>ปุ่ม "สร้าง PDF":</strong> สร้างไฟล์ PDF ของรายการสัญญายืมเงิน</li>
+                        <li><strong>คอลัมน์ "ดำเนินการ":</strong>
+                            <ul>
+                                <li><strong>ไอคอนรูปเอกสารมีลูกศร (บันทึกการคืนเงิน/ดูรายละเอียด):</strong> เปิดหน้าต่างสำหรับบันทึกการคืนเงินของสัญญานั้นๆ หรือดูประวัติการคืนเงิน</li>
+                                <li><strong>ไอคอนรูปดินสอ (แก้ไข):</strong> แก้ไขข้อมูลสัญญายืมเงินนั้นๆ</li>
+                                <li><strong>ไอคอนรูปถังขยะ (ลบ):</strong> ลบสัญญายืมเงิน (การลบจะส่งผลต่อยอดใช้ไปของโครงการที่เกี่ยวข้อง และข้อมูลในทะเบียนคุมลูกหนี้)</li>
+                            </ul>
+                        </li>
+                    </ul>
+                     <h4>4.5. หลักฐาน ส่งใช้เงินยืม (บค.)</h4>
+                    <ul>
+                        <li><strong>การดูข้อมูล:</strong> ตารางแสดงรายการหลักฐานการส่งใช้เงินยืม (บค.) ทั้งหมดของปีงบประมาณที่เลือก</li>
+                        <li><strong>ฟอร์มบันทึก:</strong> กรอกข้อมูลหลักฐานการส่งใช้เงินยืม (เลขที่ บค., เลือกสัญญายืมเงิน บย. ที่เกี่ยวข้อง, วันที่คืน, จำนวนเงินคืน, แนบไฟล์หลักฐาน)</li>
+                        <li><strong>ปุ่ม "สร้าง Excel":</strong> ส่งออกข้อมูลในตารางนี้เป็นไฟล์ Excel</li>
+                        <li><strong>ปุ่ม "สร้าง PDF":</strong> สร้างไฟล์ PDF ของรายการหลักฐานส่งใช้เงินยืม</li>
+                        <li><strong>คอลัมน์ "ลบ":</strong>
+                            <ul>
+                                <li><strong>ไอคอนรูปถังขยะ (ลบ):</strong> ลบหลักฐาน บค. นั้นๆ (การลบจะ "ยกเลิก" การคืนเงินที่เกี่ยวข้องในสัญญายืมเงินเดิมด้วย)</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <h4>4.6. ทะเบียนคุมใบสำคัญจ่าย (บส.)</h4>
+                    <ul>
+                        <li><strong>การดูข้อมูล:</strong> ตารางนี้จะรวบรวมและแสดงรายการใบสำคัญจ่ายทั้งหมดที่มาจาก:
+                            <ul>
+                                <li><strong>หลักฐาน ส่งใช้เงินยืม (บค.):</strong> แสดงเป็นรายการส่งใช้เงินยืม</li>
+                                <li><strong>ทะเบียนคุมการจ่าย (บจ.):</strong> แสดงเป็นรายการจ่ายโดยตรง</li>
+                            </ul>
+                        </li>
+                        <li>ข้อมูลจะถูกจัดเรียงตามวันที่ล่าสุดขึ้นก่อน</li>
+                        <li><strong>ปุ่ม "สร้าง Excel":</strong> ส่งออกข้อมูลในตารางนี้เป็นไฟล์ Excel</li>
+                        <li><strong>ปุ่ม "สร้าง PDF":</strong> สร้างไฟล์ PDF ของทะเบียนคุมใบสำคัญจ่าย (สำหรับปีงบประมาณที่เลือก) โดยจะแสดงผลในแนวตั้ง A4</li>
+                    </ul>
+                    <h4>4.7. ทะเบียนคุมลูกหนี้เงินยืม</h4>
+                    <ul>
+                        <li><strong>การดูข้อมูล:</strong> ตารางแสดงสถานะลูกหนี้จากสัญญายืมเงินทั้งหมดของปีงบประมาณที่เลือก (ดึงข้อมูลจากสัญญายืมเงิน บย. และการคืนเงิน)</li>
+                        <li><strong>ปุ่ม "สร้าง Excel":</strong> ส่งออกข้อมูลในตารางนี้เป็นไฟล์ Excel</li>
+                        <li><strong>ปุ่ม "สร้าง PDF":</strong> สร้างไฟล์ PDF ของทะเบียนคุมลูกหนี้เงินยืม</li>
+                    </ul>
+
+                    <h3>5. การจัดเก็บข้อมูล</h3>
+                    <p>โปรแกรมนี้ใช้ <code>localStorage</code> ของเว็บเบราว์เซอร์ในการจัดเก็บข้อมูลทั้งหมด ซึ่งหมายความว่า:</p>
+                    <ul>
+                        <li>ข้อมูลจะถูกบันทึกไว้ในคอมพิวเตอร์เครื่องที่คุณใช้งานโปรแกรม และภายในเบราว์เซอร์นั้นๆ</li>
+                        <li>หากคุณเปิดโปรแกรมด้วยเบราว์เซอร์อื่น หรือบนคอมพิวเตอร์เครื่องอื่น ข้อมูลจะไม่ใช่ชุดเดียวกัน</li>
+                        <li>การล้างข้อมูลแคชหรือประวัติการท่องเว็บของเบราว์เซอร์ อาจทำให้ข้อมูลที่บันทึกไว้สูญหายได้ <strong>ดังนั้นการ Backup ข้อมูลเป็นประจำจึงสำคัญมาก</strong></li>
+                    </ul>
+
+                    <h3>6. คำแนะนำเพิ่มเติม</h3>
+                    <ul>
+                        <li><strong>Backup ข้อมูลอย่างสม่ำเสมอ:</strong> ใช้ฟังก์ชัน "Backup ข้อมูลทั้งหมด" ในหน้าแรก เพื่อป้องกันข้อมูลสูญหาย</li>
+                        <li><strong>ตรวจสอบปีงบประมาณ:</strong> ก่อนเพิ่มหรือแก้ไขข้อมูลในแต่ละทะเบียน ตรวจสอบให้แน่ใจว่าคุณได้เลือกปีงบประมาณที่ถูกต้องแล้ว</li>
+                        <li><strong>การแก้ไข/ลบข้อมูล:</strong> โปรดใช้ความระมัดระวังในการแก้ไขหรือลบข้อมูล โดยเฉพาะข้อมูลที่เชื่อมโยงกัน เช่น การลบโครงการที่มีการผูกกับรายการจ่ายแล้ว อาจต้องลบรายการจ่ายที่เกี่ยวข้องก่อน</li>
+                    </ul>
+                    <p class="mt-6 text-center text-sm text-slate-500">หวังว่าคู่มือนี้จะเป็นประโยชน์ในการใช้งานโปรแกรมนะครับ หากมีคำถามเพิ่มเติมหรือพบปัญหาในการใช้งาน สามารถสอบถามได้เลยครับ</p>
+                </div>
+            </section>
+        </div>
+
+
+    </main>
+
+    <div id="fiscalYearModal" class="modal no-print">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('fiscalYearModal')">&times;</span>
+            <h3 id="fiscalYearModalTitle" class="text-xl font-semibold mb-4">เพิ่มปีงบประมาณใหม่</h3>
+            <form id="fiscalYearForm">
+                <div class="mb-4">
+                    <label for="fiscalYearName" class="block text-sm font-medium text-gray-700 mb-1">ชื่อปีงบประมาณ:</label>
+                    <input type="text" id="fiscalYearName" name="fiscalYearName" class="w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label for="fiscalYearStartDate" class="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มต้น:</label>
+                    <input type="date" id="fiscalYearStartDate" name="fiscalYearStartDate" class="w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label for="fiscalYearEndDate" class="block text-sm font-medium text-gray-700 mb-1">วันที่สิ้นสุด:</label>
+                    <input type="date" id="fiscalYearEndDate" name="fiscalYearEndDate" class="w-full" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('fiscalYearModal')" class="btn btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn btn-success">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="projectModal" class="modal no-print">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('projectModal')">&times;</span>
+            <h3 id="projectModalTitle" class="text-xl font-semibold mb-4">เพิ่มรายการโครงการใหม่</h3>
+            <form id="projectForm">
+                <input type="hidden" id="projectId" name="projectId">
+                <div class="mb-4">
+                    <label for="projectName" class="block text-sm font-medium text-gray-700 mb-1">รายการ (ชื่อโครงการ):</label>
+                    <input type="text" id="projectName" name="projectName" class="w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label for="projectFundType" class="block text-sm font-medium text-gray-700 mb-1">ประเภทเงิน:</label>
+                    <select id="projectFundType" name="projectFundType" class="w-full" required>
+                        <option value="unspecified">ไม่ระบุ</option>
+                        <option value="academic_subsidy">เงินอุดหนุนวิชาการ</option>
+                        <option value="personnel_subsidy">เงินอุดหนุนบุคคล</option>
+                        <option value="general_admin_subsidy">เงินอุดหนุนบริหารทั่วไป</option>
+                        <option value="budget_subsidy">เงินอุดหนุนงบประมาณ</option>
+                        <option value="lunch_subsidy">เงินอุดหนุนอาหารกลางวัน</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="projectBudget" class="block text-sm font-medium text-gray-700 mb-1">จำนวนเงินตามโครงการ (บาท):</label>
+                    <input type="number" id="projectBudget" name="projectBudget" step="0.01" min="0" class="w-full" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('projectModal')" class="btn btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">บันทึกโครงการ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="csvImportModal" class="modal no-print">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('csvImportModal')">&times;</span>
+            <h3 class="text-xl font-semibold mb-4">นำเข้าข้อมูลโครงการจาก CSV</h3>
+            <p class="text-sm text-gray-600 mb-2">ไฟล์ CSV ควรมี 2 คอลัมน์: <strong>รายการ</strong> และ <strong>จำนวนเงินตามโครงการ</strong>.</p>
+            <p class="text-sm text-gray-600 mb-2">โครงการที่นำเข้าจะถูกตั้งค่า "ประเภทเงิน" เป็น "ไม่ระบุ" โดยอัตโนมัติ</p>
+            <form id="csvImportForm">
+                <div class="mb-4">
+                    <label for="csvFile" class="block text-sm font-medium text-gray-700 mb-1">เลือกไฟล์ CSV:</label>
+                    <input type="file" id="csvFile" name="csvFile" accept=".csv" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" required>
+                </div>
+                 <div class="mb-4">
+                    <input type="checkbox" id="csvHasHeader" name="csvHasHeader" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-offset-0 focus:ring-blue-200 focus:ring-opacity-50">
+                    <label for="csvHasHeader" class="ml-2 text-sm font-medium text-gray-700">ไฟล์ CSV มีหัวตาราง (ข้ามบรรทัดแรก)</label>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('csvImportModal')" class="btn btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn btn-warning">นำเข้าข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="paymentControlModal" class="modal no-print">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('paymentControlModal')">&times;</span>
+            <h3 id="paymentControlModalTitle" class="text-xl font-semibold mb-6">บันทึกรายการจ่าย (บจ.)</h3>
+            <form id="paymentControlForm" class="space-y-4">
+                <input type="hidden" id="paymentControlId" name="paymentControlId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="paymentControlNo" class="block text-sm font-medium text-gray-700">เลขที่ บจ. (เช่น บจ.001/2567):</label>
+                        <input type="text" id="paymentControlNo" name="paymentControlNo" class="w-full" required>
+                    </div>
+                    <div>
+                        <label for="paymentControlDate" class="block text-sm font-medium text-gray-700">วันที่จ่าย:</label>
+                        <input type="date" id="paymentControlDate" name="paymentControlDate" class="w-full" required>
+                    </div>
+                </div>
+                <div>
+                    <label for="paymentControlDescription" class="block text-sm font-medium text-gray-700">รายการจ่าย:</label>
+                    <input type="text" id="paymentControlDescription" name="paymentControlDescription" class="w-full" required>
+                </div>
+                 <div>
+                    <label for="paymentControlPayee" class="block text-sm font-medium text-gray-700">จ่ายให้ (ผู้รับเงิน):</label>
+                    <input type="text" id="paymentControlPayee" name="paymentControlPayee" class="w-full" required>
+                </div>
+                <div>
+                    <label for="paymentControlProjectId" class="block text-sm font-medium text-gray-700">จ่ายจากโครงการ:</label>
+                    <select id="paymentControlProjectId" name="paymentControlProjectId" class="w-full" required>
+                        <option value="">-- เลือกโครงการ --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="paymentControlAmount" class="block text-sm font-medium text-gray-700">จำนวนเงิน (บาท):</label>
+                    <input type="number" id="paymentControlAmount" name="paymentControlAmount" step="0.01" min="0" class="w-full" required>
+                </div>
+                <div>
+                    <label for="paymentControlNotes" class="block text-sm font-medium text-gray-700">หมายเหตุ (ถ้ามี):</label>
+                    <textarea id="paymentControlNotes" name="paymentControlNotes" rows="2" class="w-full"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeModal('paymentControlModal')" class="btn btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn btn-lime">บันทึกรายการจ่าย</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div id="loanAgreementModal" class="modal no-print">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('loanAgreementModal')">&times;</span>
+            <h3 id="loanAgreementModalTitle" class="text-xl font-semibold mb-6">บันทึกสัญญายืมเงิน (บย.)</h3>
+            <form id="loanAgreementForm" class="space-y-4">
+                <input type="hidden" id="loanAgreementId" name="loanAgreementId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="loanAgreementNo" class="block text-sm font-medium text-gray-700">เลขที่สัญญายืมเงิน (เช่น บย.001/2567):</label>
+                        <input type="text" id="loanAgreementNo" name="loanAgreementNo" class="w-full" required>
+                    </div>
+                    <div>
+                        <label for="loanAgreementDate" class="block text-sm font-medium text-gray-700">วันที่ทำสัญญา:</label>
+                        <input type="date" id="loanAgreementDate" name="loanAgreementDate" class="w-full" required>
+                    </div>
+                </div>
+                <div>
+                    <label for="loanSubmittedTo" class="block text-sm font-medium text-gray-700">ยื่นต่อ (ผู้รับคำร้อง):</label>
+                    <input type="text" id="loanSubmittedTo" name="loanSubmittedTo" class="w-full" required>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="loanBorrowerName" class="block text-sm font-medium text-gray-700">ชื่อผู้ยืม:</label>
+                        <input type="text" id="loanBorrowerName" name="loanBorrowerName" class="w-full" required>
+                    </div>
+                    <div>
+                        <label for="loanBorrowerPosition" class="block text-sm font-medium text-gray-700">ตำแหน่ง:</label>
+                        <input type="text" id="loanBorrowerPosition" name="loanBorrowerPosition" class="w-full" required>
+                    </div>
+                </div>
+                <div>
+                    <label for="loanBorrowerAffiliation" class="block text-sm font-medium text-gray-700">สังกัด:</label>
+                    <input type="text" id="loanBorrowerAffiliation" name="loanBorrowerAffiliation" class="w-full">
+                </div>
+                <div>
+                    <label for="loanProjectId" class="block text-sm font-medium text-gray-700">มีความประสงค์ขอยืมเงินจากโครงการ:</label>
+                    <select id="loanProjectId" name="loanProjectId" class="w-full" required>
+                        <option value="">-- เลือกโครงการ --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="loanSubActivity" class="block text-sm font-medium text-gray-700">กิจกรรมย่อย (ถ้ามี):</label>
+                    <input type="text" id="loanSubActivity" name="loanSubActivity" class="w-full">
+                </div>
+                <div>
+                    <label for="loanPurpose" class="block text-sm font-medium text-gray-700">วัตถุประสงค์ในการยืม:</label>
+                    <textarea id="loanPurpose" name="loanPurpose" rows="2" class="w-full"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="loanAmount" class="block text-sm font-medium text-gray-700">จำนวนเงินยืม (บาท):</label>
+                        <input type="number" id="loanAmount" name="loanAmount" step="0.01" min="0" class="w-full" required>
+                    </div>
+                    <div>
+                        <label for="loanDueDate" class="block text-sm font-medium text-gray-700">กำหนดวันคืนภายใน:</label>
+                        <input type="date" id="loanDueDate" name="loanDueDate" class="w-full" required>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeModal('loanAgreementModal')" class="btn btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn btn-info">บันทึกสัญญา</button>
+                    </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="loanRepaymentModal" class="modal no-print">
+        <div class="modal-content max-w-md">
+            <span class="close-button" onclick="closeModal('loanRepaymentModal')">&times;</span>
+            <h3 id="loanRepaymentModalTitle" class="text-xl font-semibold mb-4">บันทึกการคืนเงิน</h3>
+            <form id="loanRepaymentForm" class="space-y-3">
+                <input type="hidden" id="repaymentLoanId">
+                <div><p><strong>เลขที่สัญญา:</strong> <span id="repaymentLoanNoDisplay"></span></p></div>
+                <div><p><strong>ผู้ยืม:</strong> <span id="repaymentBorrowerDisplay"></span></p></div>
+                <div><p><strong>ยอดเงินยืม:</strong> <span id="repaymentTotalLoanAmountDisplay"></span> บาท</p></div>
+                <div><p><strong>ยอดคงค้างปัจจุบัน:</strong> <span id="repaymentCurrentBalanceDisplay"></span> บาท</p></div>
+                <hr class="my-3">
+                <div>
+                    <label for="repaymentDate" class="block text-sm font-medium text-gray-700">วันที่คืนเงิน:</label>
+                    <input type="date" id="repaymentDate" class="w-full" required>
+                </div>
+                <div>
+                    <label for="repaymentAmount" class="block text-sm font-medium text-gray-700">จำนวนเงินที่คืน (บาท):</label>
+                    <input type="number" id="repaymentAmount" step="0.01" min="0" class="w-full" required>
+                </div>
+                <div>
+                    <label for="repaymentNotes" class="block text-sm font-medium text-gray-700">หมายเหตุ (ถ้ามี):</label>
+                    <textarea id="repaymentNotes" rows="2" class="w-full"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3">
+                    <button type="button" onclick="closeModal('loanRepaymentModal')" class="btn btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn btn-success">บันทึกการคืนเงิน</button>
+                </div>
+            </form>
+            <h4 class="text-md font-semibold mt-4 mb-2">ประวัติการคืนเงิน:</h4>
+            <div id="repaymentHistoryContainer" class="max-h-40 overflow-y-auto border rounded-md p-1 text-sm">
+                <p class="text-gray-500">ยังไม่มีการคืนเงิน</p>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- App State & Configuration ---
+        let fiscalYears = [];
+        let projects = {};
+        let loanAgreements = {};
+        let loanRepaymentEvidences = {};
+        let paymentControls = {};
+        let currentFiscalYearId = null;
+        let currentView = 'homePage';
+
+        const fundTypes = {
+            unspecified: "ไม่ระบุ", academic_subsidy: "เงินอุดหนุนวิชาการ",
+            personnel_subsidy: "เงินอุดหนุนบุคคล", general_admin_subsidy: "เงินอุดหนุนบริหารทั่วไป",
+            budget_subsidy: "เงินอุดหนุนงบประมาณ", lunch_subsidy: "เงินอุดหนุนอาหารกลางวัน"
+        };
+        const LOCAL_STORAGE_PREFIX = 'schoolFinanceApp_v3_';
+
+        // --- DOM Elements ---
+        const fiscalYearSelect = document.getElementById('fiscalYearSelect');
+        const addFiscalYearBtn = document.getElementById('addFiscalYearBtn');
+        const projectTableBody = document.getElementById('projectTableBody');
+        const addProjectBtn = document.getElementById('addProjectBtn');
+        const importCsvBtn = document.getElementById('importCsvBtn');
+        const printProjectRegisterBtn = document.getElementById('printProjectRegisterBtn');
+        const exportProjectRegisterExcelBtn = document.getElementById('exportProjectRegisterExcelBtn');
+        const loanAgreementTableBody = document.getElementById('loanAgreementTableBody');
+        const addLoanAgreementBtn = document.getElementById('addLoanAgreementBtn');
+        const printLoanAgreementsBtn = document.getElementById('printLoanAgreementsBtn');
+        const exportLoanAgreementsExcelBtn = document.getElementById('exportLoanAgreementsExcelBtn');
+        const loanRepaymentEvidenceTableBody = document.getElementById('loanRepaymentEvidenceTableBody');
+        const printLoanRepaymentEvidenceBtn = document.getElementById('printLoanRepaymentEvidenceBtn');
+        const exportLoanRepaymentEvidenceExcelBtn = document.getElementById('exportLoanRepaymentEvidenceExcelBtn');
+        const loanDebtorRegisterTableBody = document.getElementById('loanDebtorRegisterTableBody');
+        const printLoanDebtorRegisterBtn = document.getElementById('printLoanDebtorRegisterBtn');
+        const exportLoanDebtorRegisterExcelBtn = document.getElementById('exportLoanDebtorRegisterExcelBtn');
+        const paymentControlTableBody = document.getElementById('paymentControlTableBody');
+        const addPaymentControlBtn = document.getElementById('addPaymentControlBtn');
+        const printPaymentControlBtn = document.getElementById('printPaymentControlBtn');
+        const exportPaymentControlExcelBtn = document.getElementById('exportPaymentControlExcelBtn');
+        const paymentVoucherRegisterTableBody = document.getElementById('paymentVoucherRegisterTableBody');
+        const printPaymentVoucherRegisterBtn = document.getElementById('printPaymentVoucherRegisterBtn');
+        const exportPaymentVoucherRegisterExcelBtn = document.getElementById('exportPaymentVoucherRegisterExcelBtn');
+        const importFile = document.getElementById('importFile');
+        const triggerImportBtn = document.getElementById('triggerImportBtn');
+        const backupDataBtn = document.getElementById('backupDataBtn');
+        const tabDropdownNav = document.getElementById('tabDropdownNav');
+
+
+        const fiscalYearModal = document.getElementById('fiscalYearModal');
+        const fiscalYearForm = document.getElementById('fiscalYearForm');
+        const projectModal = document.getElementById('projectModal');
+        const projectForm = document.getElementById('projectForm');
+        const csvImportModal = document.getElementById('csvImportModal');
+        const csvImportForm = document.getElementById('csvImportForm');
+        const paymentControlModal = document.getElementById('paymentControlModal');
+        const paymentControlForm = document.getElementById('paymentControlForm');
+        const loanAgreementModal = document.getElementById('loanAgreementModal');
+        const loanAgreementForm = document.getElementById('loanAgreementForm');
+        const loanRepaymentModal = document.getElementById('loanRepaymentModal');
+        const loanRepaymentForm = document.getElementById('loanRepaymentForm');
+        const loanRepaymentEvidenceForm = document.getElementById('loanRepaymentEvidenceForm');
+
+        const messageBox = document.getElementById('messageBox');
+
+        const contentHomePage = document.getElementById('contentHomePage');
+        const contentProjectRegister = document.getElementById('contentProjectRegister');
+        const contentPaymentControl = document.getElementById('contentPaymentControl');
+        const contentLoanAgreements = document.getElementById('contentLoanAgreements');
+        const contentLoanRepaymentEvidence = document.getElementById('contentLoanRepaymentEvidence');
+        const contentPaymentVoucherRegister = document.getElementById('contentPaymentVoucherRegister');
+        const contentLoanDebtorRegister = document.getElementById('contentLoanDebtorRegister');
+        const contentUserManual = document.getElementById('contentUserManual'); // New
+        const printFiscalYearInfoElem = document.getElementById('printFiscalYearInfo');
+        const homeFiscalYearDisplay = document.getElementById('homeFiscalYearDisplay');
+        let overallBudgetChartInstance = null;
+        let fundTypeProjectChartInstance = null;
+
+
+        // --- Utility Functions ---
+        function showMessage(message, type = 'success', duration = 3000) {
+            messageBox.textContent = message;
+            messageBox.className = 'message-box no-print';
+            if (type === 'error') messageBox.classList.add('error');
+            else if (type === 'info') messageBox.classList.add('info');
+            messageBox.style.display = 'block';
+            setTimeout(() => { messageBox.style.display = 'none'; }, duration);
+        }
+        function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+        function formatCurrency(amount) {
+            const num = parseFloat(amount);
+            return isNaN(num) ? '0.00' : num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        function getFundTypeName(value) { return fundTypes[value] || fundTypes.unspecified; }
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        function formatDateForExcel(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear() + 543; // Buddhist year
+            return `${day}/${month}/${year}`;
+        }
+
+
+        // --- Modal Management ---
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+            } else {
+                console.error(`Modal with ID "${modalId}" not found.`);
+                showMessage(`Modal with ID "${modalId}" not found.`, 'error');
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            } else {
+                console.error(`Modal with ID "${modalId}" not found.`);
+            }
+        }
+        window.onclick = (event) => { if (event.target.classList.contains('modal')) closeModal(event.target.id); };
+
+        // --- Data Persistence ---
+        function saveData() {
+            console.log("Saving data...");
+            const dataToSave = {
+                fiscalYears,
+                projects,
+                loanAgreements,
+                loanRepaymentEvidences,
+                paymentControls,
+                currentFiscalYearId,
+                currentView
+            };
+            localStorage.setItem(LOCAL_STORAGE_PREFIX + 'appData', JSON.stringify(dataToSave));
+            console.log("Data saved successfully.");
+        }
+
+        function loadData() {
+            console.log("Loading data...");
+            const storedData = localStorage.getItem(LOCAL_STORAGE_PREFIX + 'appData');
+            if (storedData) {
+                try {
+                    const parsedData = JSON.parse(storedData);
+                    fiscalYears = parsedData.fiscalYears || [];
+                    projects = parsedData.projects || {};
+                    loanAgreements = parsedData.loanAgreements || {};
+                    loanRepaymentEvidences = parsedData.loanRepaymentEvidences || {};
+                    paymentControls = parsedData.paymentControls || {};
+                    currentFiscalYearId = parsedData.currentFiscalYearId || null;
+                    currentView = parsedData.currentView || 'homePage';
+                    console.log("Data loaded successfully from single key.");
+                } catch (error) {
+                    console.error("Error parsing stored data:", error);
+                    initializeEmptyData();
+                    showMessage("เกิดข้อผิดพลาดในการโหลดข้อมูล อาจมีการใช้ข้อมูลเริ่มต้น", "error", 5000);
+                }
+            } else {
+                initializeEmptyData();
+                console.log("No data found in localStorage, initialized empty data.");
+            }
+
+
+            if (fiscalYears.length > 0 && (!currentFiscalYearId || !fiscalYears.find(fy => fy.id === currentFiscalYearId))) {
+                currentFiscalYearId = fiscalYears[0].id;
+            } else if (fiscalYears.length === 0) {
+                currentFiscalYearId = null;
+            }
+        }
+
+        function initializeEmptyData() {
+            fiscalYears = [];
+            projects = {};
+            loanAgreements = {};
+            loanRepaymentEvidences = {};
+            paymentControls = {};
+            currentFiscalYearId = null;
+            currentView = 'homePage';
+        }
+
+
+        // --- Tab Switching ---
+        function switchTab(tabName) {
+            currentView = tabName;
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tabDropdownNav) { // Update dropdown if it exists
+                tabDropdownNav.value = tabName;
+            }
+
+            const activeTabContent = document.getElementById('content' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+            if (activeTabContent) {
+                 activeTabContent.classList.add('active');
+            } else {
+                console.warn(`Content for tab "${tabName}" not found.`);
+            }
+
+
+            if (tabName === 'homePage') renderHomePage();
+            if (tabName === 'projectRegister') renderProjects();
+            if (tabName === 'paymentControl') renderPaymentControls();
+            if (tabName === 'loanAgreements') renderLoanAgreements();
+            if (tabName === 'loanRepaymentEvidence') {
+                populateRepaymentLoanAgreementDropdown();
+                renderLoanRepaymentEvidences();
+            }
+            if (tabName === 'paymentVoucherRegister') renderPaymentVoucherRegister();
+            if (tabName === 'loanDebtorRegister') renderLoanDebtorRegister();
+            // No specific render function for userManual, as its content is static HTML
+            saveData();
+        }
+
+        // --- Fiscal Year Management ---
+        function renderFiscalYears() {
+            fiscalYearSelect.innerHTML = '';
+            if (fiscalYears.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'ยังไม่มีปีงบประมาณ';
+                option.disabled = true;
+                fiscalYearSelect.appendChild(option);
+                currentFiscalYearId = null;
+                if(homeFiscalYearDisplay) homeFiscalYearDisplay.textContent = 'N/A';
+            } else {
+                fiscalYears.sort((a,b) => a.name.localeCompare(b.name));
+                fiscalYears.forEach(fy => {
+                    const option = document.createElement('option');
+                    option.value = fy.id;
+                    option.textContent = fy.name;
+                    if (fy.id === currentFiscalYearId) option.selected = true;
+                    fiscalYearSelect.appendChild(option);
+                });
+                 if (!currentFiscalYearId || !fiscalYears.find(fy => fy.id === currentFiscalYearId)) {
+                    currentFiscalYearId = fiscalYears[0].id;
+                 }
+                 fiscalYearSelect.value = currentFiscalYearId;
+                 if(homeFiscalYearDisplay && currentFiscalYearId) {
+                    const currentFYObject = fiscalYears.find(fy => fy.id === currentFiscalYearId);
+                    homeFiscalYearDisplay.textContent = currentFYObject ? currentFYObject.name : 'N/A';
+                 }
+            }
+
+            if (currentView === 'homePage') renderHomePage();
+            else if (currentView === 'projectRegister') renderProjects();
+            else if (currentView === 'paymentControl') renderPaymentControls();
+            else if (currentView === 'loanAgreements') renderLoanAgreements();
+            else if (currentView === 'loanRepaymentEvidence') {
+                populateRepaymentLoanAgreementDropdown();
+                renderLoanRepaymentEvidences();
+            } else if (currentView === 'paymentVoucherRegister') renderPaymentVoucherRegister();
+            else if (currentView === 'loanDebtorRegister') {
+                renderLoanDebtorRegister();
+            }
+            populateLoanProjectDropdown();
+            populatePaymentControlProjectDropdown();
+        }
+
+        // --- Project Management ---
+        function renderProjects() {
+            if(!projectTableBody) return; // Ensure element exists
+            projectTableBody.innerHTML = '';
+            const projectRegisterPrintFiscalYear = document.getElementById('projectRegisterPrintFiscalYear');
+            if (currentFiscalYearId && fiscalYears.find(fy => fy.id === currentFiscalYearId)) {
+                if(projectRegisterPrintFiscalYear) projectRegisterPrintFiscalYear.textContent = `ปีงบประมาณ: ${fiscalYears.find(fy => fy.id === currentFiscalYearId).name}`;
+            } else {
+                if(projectRegisterPrintFiscalYear) projectRegisterPrintFiscalYear.textContent = '';
+            }
+
+            if (!currentFiscalYearId || !projects[currentFiscalYearId] || Object.keys(projects[currentFiscalYearId]).length === 0) {
+                projectTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500" data-label="ข้อมูล">ยังไม่มีข้อมูลโครงการ</td></tr>`;
+                return;
+            }
+            const currentProjs = projects[currentFiscalYearId];
+            const sortedProjectIds = Object.keys(currentProjs).sort((a,b) => (currentProjs[a].sequence_number || Infinity) - (currentProjs[b].sequence_number || Infinity));
+            sortedProjectIds.forEach((projId, index) => {
+                const p = currentProjs[projId];
+                const spent = calculateProjectSpentAmount(projId);
+                const balance = parseFloat(p.budgeted_amount) - spent;
+                const row = projectTableBody.insertRow();
+                row.className = "hover:bg-gray-50";
+                row.insertCell().innerHTML = `<div class="px-6 py-4 text-sm text-gray-900" data-label="ลำดับ">${p.sequence_number || (index + 1)}</div>`;
+                row.insertCell().innerHTML = `<div class="px-6 py-4 text-sm text-gray-900" data-label="รายการ">${p.item_name}</div>`;
+                const fundTypeCell = row.insertCell();
+                fundTypeCell.className = "col-fund-type-hide-print";
+                fundTypeCell.innerHTML = `<div class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-label="ประเภทเงิน">${getFundTypeName(p.fund_type)}</div>`;
+                row.insertCell().innerHTML = `<div class="px-6 py-4 text-sm text-gray-900 text-right" data-label="งบโครงการ">${formatCurrency(p.budgeted_amount)}</div>`;
+                row.insertCell().innerHTML = `<div class="px-6 py-4 text-sm text-gray-900 text-right" data-label="ใช้ไป">${formatCurrency(spent)}</div>`;
+                row.insertCell().innerHTML = `<div class="px-6 py-4 text-sm font-medium ${balance < 0 ? 'text-red-600' : 'text-green-600'} text-right" data-label="คงเหลือ">${formatCurrency(balance)}</div>`;
+                const actionsCell = row.insertCell();
+                actionsCell.className = "px-6 py-4 whitespace-nowrap text-sm font-medium text-center no-print";
+                actionsCell.setAttribute('data-label', 'จัดการ');
+                actionsCell.innerHTML = `
+                    <button onclick="editProject('${p.id}')" class="text-yellow-600 hover:text-yellow-900 p-1 mr-2" title="เปลี่ยนแปลงชื่อโครงการ และจำนวนเงิน">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 inline-block"><path d="M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z"></path></svg>
+                    </button>
+                    <button onclick="deleteProject('${p.id}')" class="text-red-600 hover:text-red-900 p-1" title="ลบโครงการ">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 inline-block"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.58.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193v-.443A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd"></path></svg>
+                    </button>
+                `;
+            });
+        }
+        // --- Project Spent Amount Calculation (includes direct payments "บจ." and loans "บย.") ---
+        function calculateProjectSpentAmount(projId) {
+            if (!currentFiscalYearId || !projects[currentFiscalYearId] || !projects[currentFiscalYearId][projId]) {
+                return 0;
+            }
+            let totalSpent = 0;
+            // Sum amounts from Payment Controls (บจ.) linked to this project
+            if (paymentControls[currentFiscalYearId]) {
+                for (const pcId in paymentControls[currentFiscalYearId]) {
+                    const pc = paymentControls[currentFiscalYearId][pcId];
+                    if (pc.paymentControlProjectId === projId) {
+                        totalSpent += parseFloat(pc.paymentControlAmount || 0);
+                    }
+                }
+            }
+
+            // Sum amounts from Loan Agreements (บย.) linked to this project
+            if (loanAgreements[currentFiscalYearId]) {
+                for (const loanId in loanAgreements[currentFiscalYearId]) {
+                    const loan = loanAgreements[currentFiscalYearId][loanId];
+                    if (loan.loanProjectId === projId) {
+                        totalSpent += parseFloat(loan.loanAmount || 0);
+                    }
+                }
+            }
+            return totalSpent;
+        }
+
+
+        // --- Payment Control (บจ.) Management ---
+        function populatePaymentControlProjectDropdown() {
+            const selectEl = document.getElementById('paymentControlProjectId');
+            if (!selectEl) return;
+            selectEl.innerHTML = '<option value="">-- เลือกโครงการ --</option>';
+            if (currentFiscalYearId && projects[currentFiscalYearId]) {
+                const sortedProjectIds = Object.keys(projects[currentFiscalYearId]).sort((a,b) => (projects[currentFiscalYearId][a].sequence_number || Infinity) - (projects[currentFiscalYearId][b].sequence_number || Infinity));
+                sortedProjectIds.forEach(projId => {
+                    const project = projects[currentFiscalYearId][projId];
+                    const option = document.createElement('option');
+                    option.value = projId;
+                    option.textContent = `${project.sequence_number}. ${project.item_name}`;
+                    selectEl.appendChild(option);
+                });
+            }
+        }
+        function renderPaymentControls() {
+            if(!paymentControlTableBody) return;
+            paymentControlTableBody.innerHTML = '';
+            const paymentControlPrintFiscalYear = document.getElementById('paymentControlPrintFiscalYear');
+             if (currentFiscalYearId && fiscalYears.find(fy => fy.id === currentFiscalYearId)) {
+                if(paymentControlPrintFiscalYear) paymentControlPrintFiscalYear.textContent = `ปีงบประมาณ: ${fiscalYears.find(fy => fy.id === currentFiscalYearId).name}`;
+            } else {
+                if(paymentControlPrintFiscalYear) paymentControlPrintFiscalYear.textContent = '';
+            }
+
+            if (!currentFiscalYearId || !paymentControls[currentFiscalYearId] || Object.keys(paymentControls[currentFiscalYearId]).length === 0) {
+                paymentControlTableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500" data-label="ข้อมูล">ยังไม่มีข้อมูลการจ่าย (บจ.)</td></tr>`;
+                return;
+            }
+            const currentPcs = paymentControls[currentFiscalYearId];
+            const sortedPcIds = Object.keys(currentPcs).sort((a,b) => new Date(currentPcs[b].paymentControlDate) - new Date(currentPcs[a].paymentControlDate));
+
+            sortedPcIds.forEach(pcId => {
+                const pc = currentPcs[pcId];
+                const project = projects[currentFiscalYearId] ? projects[currentFiscalYearId][pc.paymentControlProjectId] : null;
+                const projectName = project ? project.item_name : 'N/A';
+                const row = paymentControlTableBody.insertRow();
+                row.insertCell().innerHTML = `<div data-label="เลขที่ บจ.">${pc.paymentControlNo}</div>`;
+                row.insertCell().innerHTML = `<div data-label="วันที่จ่าย">${formatDate(pc.paymentControlDate)}</div>`;
+                row.insertCell().innerHTML = `<div data-label="รายการจ่าย">${pc.paymentControlDescription}</div>`;
+                row.insertCell().innerHTML = `<div data-label="จ่ายให้">${pc.paymentControlPayee}</div>`;
+                row.insertCell().innerHTML = `<div data-label="จ่ายจากโครงการ">${projectName}</div>`;
+                row.insertCell().innerHTML = `<div data-label="จำนวนเงิน" class="text-right">${formatCurrency(pc.paymentControlAmount)}</div>`;
+                row.insertCell().innerHTML = `<div data-label="หมายเหตุ">${pc.paymentControlNotes || '-'}</div>`;
+                const actionsCell = row.insertCell();
+                actionsCell.className = "text-center no-print";
+                actionsCell.setAttribute('data-label', 'จัดการ');
+                actionsCell.innerHTML = `
+                    <button onclick="editPaymentControl('${pc.id}')" class="text-yellow-600 hover:text-yellow-900 p-1 mr-2" title="แก้ไขรายการจ่าย (บจ.)">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 inline-block"><path d="M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z"></path></svg>
+                    </button>
+                    <button onclick="deletePaymentControl('${pc.id}')" class="text-red-600 hover:text-red-900 p-1" title="ลบรายการจ่าย (บจ.)">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 inline-block"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.58.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193v-.443A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd"></path></svg>
+                    </button>
+                `;
+            });
+        }
+        window.editPaymentControl = (pcId) => {
+            if (!currentFiscalYearId || !paymentControls[currentFiscalYearId] || !paymentControls[currentFiscalYearId][pcId]) {
+                showMessage('ไม่พบรายการจ่าย (บจ.) ที่ต้องการแก้ไข', 'error'); return;
+            }
+            const pc = paymentControls[currentFiscalYearId][pcId];
+            document.getElementById('paymentControlModalTitle').textContent = 'แก้ไขรายการจ่าย (บจ.)';
+            paymentControlForm.reset();
+            document.getElementById('paymentControlId').value = pc.id;
+            document.getElementById('paymentControlNo').value = pc.paymentControlNo;
+            document.getElementById('paymentControlDate').value = pc.paymentControlDate;
+            document.getElementById('paymentControlDescription').value = pc.paymentControlDescription;
+            document.getElementById('paymentControlPayee').value = pc.paymentControlPayee;
+            populatePaymentControlProjectDropdown();
+            document.getElementById('paymentControlProjectId').value = pc.paymentControlProjectId;
+            document.getElementById('paymentControlAmount').value = pc.paymentControlAmount;
+            document.getElementById('paymentControlNotes').value = pc.paymentControlNotes || '';
+            openModal('paymentControlModal');
+        };
+        window.deletePaymentControl = (pcId) => {
+            if (!currentFiscalYearId || !paymentControls[currentFiscalYearId] || !paymentControls[currentFiscalYearId][pcId]) {
+                showMessage('ไม่พบรายการจ่าย (บจ.) ที่ต้องการลบ', 'error'); return;
+            }
+            const pcNo = paymentControls[currentFiscalYearId][pcId].paymentControlNo;
+            if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบรายการจ่าย (บจ.) เลขที่ "${pcNo}"?`)) {
+                delete paymentControls[currentFiscalYearId][pcId];
+                saveData();
+                renderPaymentControls();
+                renderProjects();
+                if(currentView === 'homePage') renderHomePage();
+                showMessage('ลบรายการจ่าย (บจ.) สำเร็จ');
+            }
+        };
+
+
+        // --- Loan Agreement Management ---
+        function populateLoanProjectDropdown() {
+            const loanProjectIdSelect = document.getElementById('loanProjectId');
+            if(!loanProjectIdSelect) return;
+            loanProjectIdSelect.innerHTML = '<option value="">-- เลือกโครงการ --</option>';
+            if (currentFiscalYearId && projects[currentFiscalYearId]) {
+                const sortedProjectIds = Object.keys(projects[currentFiscalYearId]).sort((a,b) => (projects[currentFiscalYearId][a].sequence_number || Infinity) - (projects[currentFiscalYearId][b].sequence_number || Infinity));
+                sortedProjectIds.forEach(projId => {
+                    const project = projects[currentFiscalYearId][projId];
+                    option = document.createElement('option');
+                    option.value = projId;
+                    let directPayments = 0;
+                    if (paymentControls[currentFiscalYearId]) {
+                        for (const pcId in paymentControls[currentFiscalYearId]) {
+                            if (paymentControls[currentFiscalYearId][pcId].paymentControlProjectId === projId) {
+                                directPayments += parseFloat(paymentControls[currentFiscalYearId][pcId].paymentControlAmount || 0);
+                            }
+                        }
+                    }
+                    const availableForLoan = parseFloat(project.budgeted_amount) - directPayments;
+                    option.textContent = `${project.sequence_number}. ${project.item_name} (คงเหลือให้ยืม: ${formatCurrency(availableForLoan)})`;
+                    loanProjectIdSelect.appendChild(option);
+                });
+            }
+        }
+        function renderLoanAgreements() {
+            if(!loanAgreementTableBody) return;
+            loanAgreementTableBody.innerHTML = '';
+            const loanAgreementsPrintFiscalYear = document.getElementById('loanAgreementsPrintFiscalYear');
+            if (currentFiscalYearId && fiscalYears.find(fy => fy.id === currentFiscalYearId)) {
+                if(loanAgreementsPrintFiscalYear) loanAgreementsPrintFiscalYear.textContent = `ปีงบประมาณ: ${fiscalYears.find(fy => fy.id === currentFiscalYearId).name}`;
+            } else {
+                if(loanAgreementsPrintFiscalYear) loanAgreementsPrintFiscalYear.textContent = '';
+            }
+
+            if (!currentFiscalYearId || !loanAgreements[currentFiscalYearId] || Object.keys(loanAgreements[currentFiscalYearId]).length === 0) {
+                loanAgreementTableBody.innerHTML = `<tr><td colspan="10" class="px-6 py-4 text-center text-gray-500" data-label="ข้อมูล">ยังไม่มีข้อมูลสัญญายืมเงินสำหรับปีงบประมาณนี้</td></tr>`;
+                return;
+            }
+            const currentLoans = loanAgreements[currentFiscalYearId];
+            const sortedLoanIds = Object.keys(currentLoans).sort((a,b) => new Date(currentLoans[b].loanAgreementDate) - new Date(currentLoans[a].loanAgreementDate));
+
+            sortedLoanIds.forEach(loanId => {
+                const loan = currentLoans[loanId];
+                const project = projects[currentFiscalYearId] ? projects[currentFiscalYearId][loan.loanProjectId] : null;
+                const projectName = project ? project.item_name : 'N/A (โครงการถูกลบ)';
+                const repaidAmount = calculateLoanRepaidAmount(loan);
+                const outstandingAmount = parseFloat(loan.loanAmount) - repaidAmount;
+
+                const row = loanAgreementTableBody.insertRow();
+                row.insertCell().innerHTML = `<div data-label="เลขที่สัญญา">${loan.loanAgreementNo}</div>`;
+                row.insertCell().innerHTML = `<div data-label="วันที่">${formatDate(loan.loanAgreementDate)}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ชื่อผู้ยืม">${loan.loanBorrowerName}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ตำแหน่ง">${loan.loanBorrowerPosition}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ยื่นต่อ">${loan.loanSubmittedTo}</div>`;
+                row.insertCell().innerHTML = `<div data-label="โครงการ">${projectName}</div>`;
+                row.insertCell().innerHTML = `<div data-label="จำนวนเงินยืม" class="text-right">${formatCurrency(loan.loanAmount)}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ยอดคืนแล้ว" class="text-right">${formatCurrency(repaidAmount)}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ยอดคงค้าง" class="text-right font-medium ${outstandingAmount > 0 ? 'text-orange-600' : 'text-green-600'}">${formatCurrency(outstandingAmount)}</div>`;
+                const actionsCell = row.insertCell();
+                actionsCell.className = "text-center no-print";
+                actionsCell.setAttribute('data-label', 'ดำเนินการ');
+                actionsCell.innerHTML = `
+                    <button onclick="openLoanRepaymentModal('${loan.id}')" class="text-green-600 hover:text-green-900 p-1" title="บันทึกการคืนเงิน/ดูรายละเอียด">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 inline-block"><path fill-rule="evenodd" d="M15.982 6.995H4.018a.75.75 0 0 0 0 1.5h11.964a.75.75 0 0 0 0-1.5Z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M4.018 11.495h7.964a.75.75 0 0 1 0 1.5H4.018a.75.75 0 0 1 0-1.5Z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M10 2a.75.75 0 0 1 .75.75v1.536l1.362.787a.75.75 0 0 1-.75 1.299l-1.24-.717V15a.75.75 0 0 1-1.5 0V5.655l-1.24.717a.75.75 0 1 1-.75-1.3l1.362-.787V2.75A.75.75 0 0 1 10 2ZM4.5 3.5A2.5 2.5 0 0 0 2 6v8A2.5 2.5 0 0 0 4.5 16.5h11A2.5 2.5 0 0 0 18 14V6a2.5 2.5 0 0 0-2.5-2.5h-11Z" clip-rule="evenodd" /></svg>
+                    </button>
+                    <button onclick="editLoanAgreement('${loan.id}')" class="text-yellow-600 hover:text-yellow-900 p-1 mx-1" title="แก้ไขสัญญายืมเงิน">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 inline-block"><path d="M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z"></path></svg>
+                    </button>
+                    <button onclick="deleteLoanAgreement('${loan.id}')" class="text-red-600 hover:text-red-900 p-1" title="ลบสัญญายืมเงิน">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 inline-block"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.58.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193v-.443A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd"></path></svg>
+                    </button>
+                `;
+            });
+        }
+        window.editLoanAgreement = (loanId) => {
+            if (!currentFiscalYearId || !loanAgreements[currentFiscalYearId] || !loanAgreements[currentFiscalYearId][loanId]) {
+                showMessage('ไม่พบสัญญายืมเงินที่ต้องการแก้ไข', 'error'); return;
+            }
+            const loan = loanAgreements[currentFiscalYearId][loanId];
+            document.getElementById('loanAgreementModalTitle').textContent = 'แก้ไขสัญญายืมเงิน (บย.)';
+            loanAgreementForm.reset();
+            document.getElementById('loanAgreementId').value = loan.id;
+            document.getElementById('loanAgreementNo').value = loan.loanAgreementNo;
+            document.getElementById('loanAgreementDate').value = loan.loanAgreementDate;
+            document.getElementById('loanSubmittedTo').value = loan.loanSubmittedTo;
+            document.getElementById('loanBorrowerName').value = loan.loanBorrowerName;
+            document.getElementById('loanBorrowerPosition').value = loan.loanBorrowerPosition;
+            document.getElementById('loanBorrowerAffiliation').value = loan.loanBorrowerAffiliation || '';
+            populateLoanProjectDropdown();
+            document.getElementById('loanProjectId').value = loan.loanProjectId;
+            document.getElementById('loanSubActivity').value = loan.loanSubActivity || '';
+            document.getElementById('loanPurpose').value = loan.loanPurpose || '';
+            document.getElementById('loanAmount').value = loan.loanAmount;
+            document.getElementById('loanDueDate').value = loan.loanDueDate;
+            openModal('loanAgreementModal');
+        };
+        window.deleteLoanAgreement = (loanId) => {
+            if (!currentFiscalYearId || !loanAgreements[currentFiscalYearId] || !loanAgreements[currentFiscalYearId][loanId]) {
+                showMessage('ไม่พบสัญญายืมเงินที่ต้องการลบ', 'error'); return;
+            }
+            const loanToDelete = loanAgreements[currentFiscalYearId][loanId];
+            const loanNo = loanToDelete.loanAgreementNo;
+
+            if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสัญญายืมเงินเลขที่ "${loanNo}"?`)) {
+                delete loanAgreements[currentFiscalYearId][loanId];
+                saveData();
+                renderLoanAgreements();
+                renderProjects();
+                if(currentView === 'homePage') renderHomePage();
+                showMessage('ลบสัญญายืมเงินสำเร็จ');
+            }
+        };
+        window.openLoanRepaymentModal = (loanId) => {
+            if (!currentFiscalYearId || !loanAgreements[currentFiscalYearId] || !loanAgreements[currentFiscalYearId][loanId]) {
+                showMessage('ไม่พบข้อมูลสัญญายืมเงิน', 'error'); return;
+            }
+            const loan = loanAgreements[currentFiscalYearId][loanId];
+            document.getElementById('repaymentLoanId').value = loanId;
+            document.getElementById('repaymentLoanNoDisplay').textContent = loan.loanAgreementNo;
+            document.getElementById('repaymentBorrowerDisplay').textContent = loan.loanBorrowerName;
+            document.getElementById('repaymentTotalLoanAmountDisplay').textContent = formatCurrency(loan.loanAmount);
+
+            const repaidAmount = calculateLoanRepaidAmount(loan);
+            const outstandingAmount = parseFloat(loan.loanAmount) - repaidAmount;
+            document.getElementById('repaymentCurrentBalanceDisplay').textContent = formatCurrency(outstandingAmount);
+
+            loanRepaymentForm.reset();
+            document.getElementById('repaymentDate').valueAsDate = new Date();
+            renderRepaymentHistory(loanId);
+            openModal('loanRepaymentModal');
+        };
+
+        // --- Loan Repayment Evidence (บค.) Management ---
+        function populateRepaymentLoanAgreementDropdown() {
+            const selectEl = document.getElementById('repaymentEvidenceLoanId');
+            if (!selectEl) return;
+            selectEl.innerHTML = '<option value="">-- เลือกสัญญายืมเงินที่มียอดค้าง --</option>';
+            if (currentFiscalYearId && loanAgreements[currentFiscalYearId]) {
+                Object.values(loanAgreements[currentFiscalYearId]).forEach(loan => {
+                    const repaid = calculateLoanRepaidAmount(loan);
+                    const outstanding = parseFloat(loan.loanAmount) - repaid;
+                    if (outstanding > 0) {
+                        const option = document.createElement('option');
+                        option.value = loan.id;
+                        option.textContent = `${loan.loanAgreementNo} - ${loan.loanBorrowerName} (คงค้าง: ${formatCurrency(outstanding)})`;
+                        selectEl.appendChild(option);
+                    }
+                });
+            }
+        }
+        function renderLoanRepaymentEvidences() {
+            if(!loanRepaymentEvidenceTableBody) return;
+            loanRepaymentEvidenceTableBody.innerHTML = '';
+            const repaymentEvidencePrintFiscalYear = document.getElementById('loanRepaymentEvidencePrintFiscalYear');
+             if (currentFiscalYearId && fiscalYears.find(fy => fy.id === currentFiscalYearId)) {
+                if(repaymentEvidencePrintFiscalYear) repaymentEvidencePrintFiscalYear.textContent = `ปีงบประมาณ: ${fiscalYears.find(fy => fy.id === currentFiscalYearId).name}`;
+            } else {
+                if(repaymentEvidencePrintFiscalYear) repaymentEvidencePrintFiscalYear.textContent = '';
+            }
+
+            if (!currentFiscalYearId || !loanRepaymentEvidences[currentFiscalYearId] || Object.keys(loanRepaymentEvidences[currentFiscalYearId]).length === 0) {
+                loanRepaymentEvidenceTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500" data-label="ข้อมูล">ยังไม่มีข้อมูลหลักฐานการส่งใช้เงินยืม</td></tr>`;
+                return;
+            }
+            const currentEvidences = loanRepaymentEvidences[currentFiscalYearId];
+            const sortedEvidenceIds = Object.keys(currentEvidences).sort((a,b) => new Date(currentEvidences[b].repaymentEvidenceDate) - new Date(currentEvidences[a].repaymentEvidenceDate));
+
+            sortedEvidenceIds.forEach(id => {
+                const evidence = currentEvidences[id];
+                const linkedLoan = loanAgreements[currentFiscalYearId] ? loanAgreements[currentFiscalYearId][evidence.repaymentEvidenceLoanId] : null;
+                const loanNo = linkedLoan ? linkedLoan.loanAgreementNo : 'N/A';
+                const borrowerName = linkedLoan ? linkedLoan.loanBorrowerName : 'N/A';
+
+                const row = loanRepaymentEvidenceTableBody.insertRow();
+                row.insertCell().innerHTML = `<div data-label="เลขที่ บค.">${evidence.repaymentEvidenceNo}</div>`;
+                row.insertCell().innerHTML = `<div data-label="วันที่คืน">${formatDate(evidence.repaymentEvidenceDate)}</div>`;
+                row.insertCell().innerHTML = `<div data-label="เลขที่ บย.">${loanNo}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ผู้ยืม">${borrowerName}</div>`;
+                row.insertCell().innerHTML = `<div data-label="จำนวนเงินคืน" class="text-right">${formatCurrency(evidence.repaymentEvidenceAmount)}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ชื่อไฟล์หลักฐาน">${evidence.fileName || 'ไม่ได้แนบไฟล์'}</div>`;
+                const deleteCell = row.insertCell();
+                deleteCell.className = "text-center no-print";
+                deleteCell.setAttribute('data-label', 'ลบ');
+                deleteCell.innerHTML = `<button onclick="deleteLoanRepaymentEvidence('${evidence.id}')" class="text-red-500 hover:text-red-700 p-1" title="ลบหลักฐาน บค."><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.58.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193v-.443A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd"></path></svg></button>`;
+
+            });
+        }
+        window.deleteLoanRepaymentEvidence = (evidenceId) => {
+            if (!currentFiscalYearId || !loanRepaymentEvidences[currentFiscalYearId] || !loanRepaymentEvidences[currentFiscalYearId][evidenceId]) {
+                showMessage('ไม่พบหลักฐานการส่งใช้เงินยืมที่ต้องการลบ', 'error'); return;
+            }
+            const evidence = loanRepaymentEvidences[currentFiscalYearId][evidenceId];
+            if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบหลักฐาน บค. เลขที่ "${evidence.repaymentEvidenceNo}"? การดำเนินการนี้จะ "ยกเลิก" การคืนเงินที่เกี่ยวข้องในสัญญายืมเงินเดิมด้วย`)) {
+                const targetLoanId = evidence.repaymentEvidenceLoanId;
+                if (loanAgreements[currentFiscalYearId] && loanAgreements[currentFiscalYearId][targetLoanId]) {
+                    const targetLoan = loanAgreements[currentFiscalYearId][targetLoanId];
+                    if (targetLoan.repayments) {
+                        targetLoan.repayments = targetLoan.repayments.filter(rp => rp.id !== 'rp_evd_' + evidenceId);
+                    }
+                }
+
+                delete loanRepaymentEvidences[currentFiscalYearId][evidenceId];
+                saveData();
+                renderLoanRepaymentEvidences();
+                renderLoanAgreements();
+                populateRepaymentLoanAgreementDropdown();
+                showMessage('ลบหลักฐาน บค. และยกเลิกการคืนเงินที่เกี่ยวข้องสำเร็จ');
+                if(currentView === 'homePage') renderHomePage();
+            }
+        };
+
+        // --- Payment Voucher Register (บส.) ---
+        function renderPaymentVoucherRegister() {
+            if(!paymentVoucherRegisterTableBody) return;
+            paymentVoucherRegisterTableBody.innerHTML = '';
+            const printFiscalYearElem = document.getElementById('paymentVoucherRegisterPrintFiscalYear');
+            if (currentFiscalYearId && fiscalYears.find(fy => fy.id === currentFiscalYearId)) {
+                 if(printFiscalYearElem) printFiscalYearElem.textContent = `ปีงบประมาณ: ${fiscalYears.find(fy => fy.id === currentFiscalYearId).name}`;
+            } else if (printFiscalYearElem) {
+                printFiscalYearElem.textContent = 'ปีงบประมาณ: ไม่ได้เลือก';
+            }
+
+            const combinedVouchers = [];
+            // Get บค. (Loan Repayment Evidences)
+            if (currentFiscalYearId && loanRepaymentEvidences[currentFiscalYearId]) {
+                Object.values(loanRepaymentEvidences[currentFiscalYearId]).forEach(evidence => {
+                    const linkedLoan = loanAgreements[currentFiscalYearId]?.[evidence.repaymentEvidenceLoanId];
+                    const description = linkedLoan ? `ส่งใช้เงินยืมตามสัญญา บย. เลขที่ ${linkedLoan.loanAgreementNo} (${linkedLoan.loanBorrowerName}) จำนวน ${formatCurrency(evidence.repaymentEvidenceAmount)} บาท` : `ส่งใช้เงินยืม (ไม่พบสัญญา บย.) จำนวน ${formatCurrency(evidence.repaymentEvidenceAmount)} บาท`;
+                    combinedVouchers.push({
+                        date: evidence.repaymentEvidenceDate,
+                        bcNo: evidence.repaymentEvidenceNo,
+                        bjNo: '-',
+                        description: description,
+                        notes: evidence.fileName || '-',
+                        type: 'บค'
+                    });
+                });
+            }
+            // Get บจ. (Payment Controls)
+            if (currentFiscalYearId && paymentControls[currentFiscalYearId]) {
+                Object.values(paymentControls[currentFiscalYearId]).forEach(pc => {
+                    const project = projects[currentFiscalYearId]?.[pc.paymentControlProjectId];
+                    const projectName = project ? project.item_name : 'N/A';
+                    combinedVouchers.push({
+                        date: pc.paymentControlDate,
+                        bcNo: '-',
+                        bjNo: pc.paymentControlNo,
+                        description: `${pc.paymentControlDescription} (โครงการ: ${projectName}) จำนวน ${formatCurrency(pc.paymentControlAmount)} บาท จ่ายให้ ${pc.paymentControlPayee}`,
+                        notes: pc.paymentControlNotes || '-',
+                        type: 'บจ'
+                    });
+                });
+            }
+
+            if (combinedVouchers.length === 0) {
+                paymentVoucherRegisterTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500" data-label="ข้อมูล">ยังไม่มีข้อมูลใบสำคัญจ่าย</td></tr>`;
+                return;
+            }
+
+            combinedVouchers.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date, newest first
+
+            combinedVouchers.forEach(voucher => {
+                const row = paymentVoucherRegisterTableBody.insertRow();
+                row.insertCell().innerHTML = `<div data-label="ว/ด/ป">${formatDate(voucher.date)}</div>`;
+                row.insertCell().innerHTML = `<div data-label="เลขที่ บค.">${voucher.bcNo}</div>`;
+                row.insertCell().innerHTML = `<div data-label="เลขที่ บจ.">${voucher.bjNo}</div>`;
+                row.insertCell().innerHTML = `<div data-label="รายการ">${voucher.description}</div>`;
+                row.insertCell().innerHTML = `<div data-label="หมายเหตุ">${voucher.notes}</div>`;
+            });
+        }
+
+
+        // --- Loan Debtor Register ---
+        function renderLoanDebtorRegister() {
+            if(!loanDebtorRegisterTableBody) return;
+            loanDebtorRegisterTableBody.innerHTML = '';
+            const printTitleElem = document.querySelector('#loanDebtorRegisterPrintArea h2');
+            const printFiscalYearElem = document.getElementById('printFiscalYearInfo');
+
+            if (currentFiscalYearId && fiscalYears.find(fy => fy.id === currentFiscalYearId)) {
+                 if(printFiscalYearElem) printFiscalYearElem.textContent = `ปีงบประมาณ: ${fiscalYears.find(fy => fy.id === currentFiscalYearId).name}`;
+            } else if (printFiscalYearElem) {
+                printFiscalYearElem.textContent = 'ปีงบประมาณ: ไม่ได้เลือก';
+            }
+
+
+            if (!currentFiscalYearId || !loanAgreements[currentFiscalYearId] || Object.keys(loanAgreements[currentFiscalYearId]).length === 0) {
+                loanDebtorRegisterTableBody.innerHTML = `<tr><td colspan="10" class="px-6 py-4 text-center text-gray-500" data-label="ข้อมูล">ยังไม่มีข้อมูลลูกหนี้เงินยืมสำหรับปีงบประมาณนี้</td></tr>`;
+                return;
+            }
+
+            const currentLoans = loanAgreements[currentFiscalYearId];
+            const allLoanData = [];
+
+            for (const loanId in currentLoans) {
+                const loan = currentLoans[loanId];
+                const project = projects[currentFiscalYearId] ? projects[currentFiscalYearId][loan.loanProjectId] : null;
+                const projectName = project ? project.item_name : 'N/A (โครงการถูกลบ)';
+                const totalRepaid = calculateLoanRepaidAmount(loan);
+                const outstandingAmount = parseFloat(loan.loanAmount) - totalRepaid;
+
+                let lastRepaymentDate = 'N/A';
+                if (loan.repayments && loan.repayments.length > 0) {
+                    const latestRepayment = loan.repayments.reduce((latest, current) => {
+                        return new Date(current.date) > new Date(latest.date) ? current : latest;
+                    });
+                    lastRepaymentDate = formatDate(latestRepayment.date);
+                }
+
+                allLoanData.push({
+                    agreementDate: formatDate(loan.loanAgreementDate),
+                    agreementNo: loan.loanAgreementNo,
+                    borrowerName: loan.loanBorrowerName,
+                    projectName: projectName,
+                    purpose: loan.loanPurpose || '-',
+                    loanAmount: formatCurrency(loan.loanAmount),
+                    dueDate: formatDate(loan.loanDueDate),
+                    lastRepaymentDate: lastRepaymentDate,
+                    totalRepaid: formatCurrency(totalRepaid),
+                    outstandingAmount: formatCurrency(outstandingAmount),
+                    isOutstanding: outstandingAmount > 0.009
+                });
+            }
+
+            allLoanData.sort((a, b) => {
+                const dateA = a.agreementDate === 'N/A' ? 0 : new Date(a.agreementDate.split('/').reverse().join('-'));
+                const dateB = b.agreementDate === 'N/A' ? 0 : new Date(b.agreementDate.split('/').reverse().join('-'));
+                const dateComparison = dateA - dateB;
+                if (dateComparison !== 0) return dateComparison;
+                return a.agreementNo.localeCompare(b.agreementNo);
+            });
+
+
+            allLoanData.forEach(data => {
+                const row = loanDebtorRegisterTableBody.insertRow();
+                row.insertCell().innerHTML = `<div data-label="ว/ด/ป (สัญญา)">${data.agreementDate}</div>`;
+                row.insertCell().innerHTML = `<div data-label="เลขที่สัญญา (บย.)">${data.agreementNo}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ชื่อสกุลผู้ยืม">${data.borrowerName}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ยืมจากโครงการ">${data.projectName}</div>`;
+                row.insertCell().innerHTML = `<div data-label="วัตถุประสงค์การยืม" class="truncate max-w-xs" title="${data.purpose}">${data.purpose.substring(0,50)}${data.purpose.length > 50 ? '...' : ''}</div>`;
+                row.insertCell().innerHTML = `<div data-label="จำนวนเงินยืม" class="text-right">${data.loanAmount}</div>`;
+                row.insertCell().innerHTML = `<div data-label="วันครบกำหนด">${data.dueDate}</div>`;
+                row.insertCell().innerHTML = `<div data-label="วันส่งใช้ล่าสุด">${data.lastRepaymentDate}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ยอดคืนแล้วทั้งหมด" class="text-right">${data.totalRepaid}</div>`;
+                row.insertCell().innerHTML = `<div data-label="ยอดคงค้าง" class="text-right font-medium ${data.isOutstanding ? 'text-red-600' : 'text-green-600'}">${data.outstandingAmount}</div>`;
+            });
+        }
+
+        // --- Generic PDF Generation Function ---
+        async function generatePdf(printAreaId, fiscalYearInfoId, reportTitle, orientation = 'landscape', fileName = 'report.pdf', specificPrintClass = '') {
+            const { jsPDF } = window.jspdf;
+            const printElement = document.getElementById(printAreaId);
+            if (!printElement) {
+                showMessage('ไม่พบส่วนที่ต้องการสร้าง PDF', 'error');
+                return;
+            }
+
+            const fiscalYearName = fiscalYears.find(fy => fy.id === currentFiscalYearId)?.name || "ไม่ระบุปีงบประมาณ";
+            const fiscalYearElem = document.getElementById(fiscalYearInfoId);
+            if (fiscalYearElem) {
+                fiscalYearElem.textContent = `ปีงบประมาณ: ${fiscalYearName}`;
+            }
+
+            const titleH2 = printElement.querySelector('h2.hidden.print\\:block');
+            const titleH3 = printElement.querySelector('h3.hidden.print\\:block');
+            if(titleH2) titleH2.classList.remove('hidden');
+            if(titleH3) titleH3.classList.remove('hidden');
+
+            printElement.classList.add('prepare-for-capture');
+            if (specificPrintClass) {
+                printElement.classList.add(specificPrintClass);
+            }
+            const tableInPrintArea = printElement.querySelector('table');
+            let originalTableFontSize;
+            if (tableInPrintArea) {
+                originalTableFontSize = tableInPrintArea.style.fontSize;
+                 if (orientation === 'portrait') {
+                    tableInPrintArea.style.fontSize = '10pt';
+                } else {
+                    tableInPrintArea.style.fontSize = '8pt';
+                }
+            }
+
+
+            const canvas = await html2canvas(printElement, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                width: printElement.scrollWidth,
+                height: printElement.scrollHeight,
+                windowWidth: printElement.scrollWidth,
+                windowHeight: printElement.scrollHeight
+            });
+
+            printElement.classList.remove('prepare-for-capture');
+            if (specificPrintClass) {
+                printElement.classList.remove(specificPrintClass);
+            }
+            if(titleH2) titleH2.classList.add('hidden');
+            if(titleH3) titleH3.classList.add('hidden');
+            if (tableInPrintArea) {
+                tableInPrintArea.style.fontSize = originalTableFontSize;
+            }
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: orientation,
+                unit: 'pt',
+                format: 'a4'
+            });
+
+            const pageFormat = 'a4';
+            const pdfPageWidth = pdf.internal.pageSize.getWidth();
+            const pdfPageHeight = pdf.internal.pageSize.getHeight();
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const originalImgWidth = imgProps.width;
+            const originalImgHeight = imgProps.height;
+
+            let scaleFactor = (pdfPageWidth - 40) / originalImgWidth;
+            let scaledImgWidth = originalImgWidth * scaleFactor;
+            let scaledImgHeight = originalImgHeight * scaleFactor;
+
+            const pageHeightForContent = pdfPageHeight - 40;
+
+            let yPositionOnImage = 0;
+            const numPages = Math.ceil(scaledImgHeight / pageHeightForContent);
+
+            for (let i = 0; i < numPages; i++) {
+                if (i > 0) {
+                    pdf.addPage(pageFormat, orientation);
+                }
+                let segmentHeightOnPdf = Math.min(pageHeightForContent, scaledImgHeight - yPositionOnImage);
+                let sourceSegmentHeight = segmentHeightOnPdf / scaleFactor;
+
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = originalImgWidth;
+                tempCanvas.height = sourceSegmentHeight;
+
+                const sourceY = (yPositionOnImage / scaleFactor);
+
+                tempCtx.drawImage(canvas, 0, sourceY, originalImgWidth, sourceSegmentHeight, 0, 0, originalImgWidth, sourceSegmentHeight);
+                const segmentImgData = tempCanvas.toDataURL('image/png');
+
+                pdf.addImage(segmentImgData, 'PNG', 20, 20, scaledImgWidth, segmentHeightOnPdf);
+                yPositionOnImage += segmentHeightOnPdf;
+            }
+
+            pdf.save(fileName);
+            showMessage('กำลังสร้าง PDF...', 'info');
+        }
+
+        // --- Excel Export Functions ---
+        function exportToExcel(data, sheetName, fileName, columnHeaders) {
+            try {
+                const worksheetData = [columnHeaders, ...data];
+                const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+                const colWidths = columnHeaders.map(header => ({ wch: header.length > 15 ? header.length + 5 : 15 }));
+                worksheet['!cols'] = colWidths;
+
+
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+                XLSX.writeFile(workbook, fileName);
+                showMessage(`สร้างไฟล์ Excel "${fileName}" สำเร็จแล้ว`, 'success');
+            } catch (error) {
+                console.error("Error exporting to Excel:", error);
+                showMessage(`เกิดข้อผิดพลาดในการสร้าง Excel: ${error.message}`, 'error');
+            }
+        }
+
+        // --- Event Listeners for Buttons and Forms ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp(); // Initialize the application
+
+            // Fiscal Year Management
+            if (addFiscalYearBtn) {
+                addFiscalYearBtn.addEventListener('click', () => {
+                    document.getElementById('fiscalYearModalTitle').textContent = 'เพิ่มปีงบประมาณใหม่';
+                    if (fiscalYearForm) fiscalYearForm.reset();
+                    const today = new Date();
+                    const year = today.getFullYear() + 543;
+                    if(document.getElementById('fiscalYearName')) document.getElementById('fiscalYearName').value = `ปีงบประมาณ ${year}`;
+                    const currentGregorianYear = today.getFullYear();
+                    if(document.getElementById('fiscalYearStartDate')) document.getElementById('fiscalYearStartDate').value = `${currentGregorianYear}-10-01`;
+                    if(document.getElementById('fiscalYearEndDate')) document.getElementById('fiscalYearEndDate').value = `${currentGregorianYear + 1}-09-30`;
+                    openModal('fiscalYearModal');
+                });
+            }
+            if (fiscalYearForm) {
+                fiscalYearForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const name = e.target.fiscalYearName.value.trim();
+                    const startDate = e.target.fiscalYearStartDate.value;
+                    const endDate = e.target.fiscalYearEndDate.value;
+                    if (!name || !startDate || !endDate) { showMessage('กรุณากรอกข้อมูลให้ครบถ้วน', 'error'); return; }
+                    if (new Date(startDate) >= new Date(endDate)) { showMessage('วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด', 'error'); return; }
+                    if (fiscalYears.find(fy => fy.name.toLowerCase() === name.toLowerCase())) { showMessage('ชื่อปีงบประมาณนี้มีอยู่แล้ว', 'error'); return; }
+
+                    const newFiscalYear = { id: 'fy_' + generateId(), name, startDate, endDate };
+                    fiscalYears.push(newFiscalYear);
+                    if (!projects[newFiscalYear.id]) projects[newFiscalYear.id] = {};
+                    if (!loanAgreements[newFiscalYear.id]) loanAgreements[newFiscalYear.id] = {};
+                    if (!loanRepaymentEvidences[newFiscalYear.id]) loanRepaymentEvidences[newFiscalYear.id] = {};
+                    if (!paymentControls[newFiscalYear.id]) paymentControls[newFiscalYear.id] = {};
+                    currentFiscalYearId = newFiscalYear.id;
+                    saveData();
+                    renderFiscalYears();
+                    closeModal('fiscalYearModal');
+                    showMessage('เพิ่มปีงบประมาณสำเร็จแล้ว');
+                });
+            }
+            if (fiscalYearSelect) {
+                fiscalYearSelect.addEventListener('change', (e) => {
+                    currentFiscalYearId = e.target.value;
+                    saveData();
+                    renderFiscalYears();
+                });
+            }
+
+            // Project Management
+            if (addProjectBtn) {
+                addProjectBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId) { showMessage('กรุณาเลือกหรือเพิ่มปีงบประมาณก่อน', 'error'); return; }
+                    if(document.getElementById('projectModalTitle')) document.getElementById('projectModalTitle').textContent = 'เพิ่มรายการโครงการใหม่';
+                    if(projectForm) projectForm.reset();
+                    if(document.getElementById('projectId')) document.getElementById('projectId').value = '';
+                    if(document.getElementById('projectFundType')) document.getElementById('projectFundType').value = 'unspecified';
+                    openModal('projectModal');
+                });
+            }
+            if (projectForm) {
+                projectForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const id = document.getElementById('projectId').value;
+                    const name = document.getElementById('projectName').value.trim();
+                    const fundType = document.getElementById('projectFundType').value;
+                    const budget = parseFloat(document.getElementById('projectBudget').value);
+
+                    if (!name || isNaN(budget) || budget < 0 || !fundType) { showMessage('ข้อมูลไม่ถูกต้อง', 'error'); return; }
+                    if (!currentFiscalYearId) { showMessage('ไม่ได้เลือกปีงบประมาณ', 'error'); return; }
+                    if (!projects[currentFiscalYearId]) projects[currentFiscalYearId] = {};
+
+                    if (id) {
+                        if (projects[currentFiscalYearId][id]) {
+                            projects[currentFiscalYearId][id] = { ...projects[currentFiscalYearId][id], item_name: name, budgeted_amount: budget, fund_type: fundType };
+                        }
+                    } else {
+                        const newId = 'proj_' + generateId();
+                        const count = Object.keys(projects[currentFiscalYearId]).length;
+                        projects[currentFiscalYearId][newId] = { id: newId, sequence_number: count + 1, item_name: name, budgeted_amount: budget, fund_type: fundType, createdAt: Date.now() };
+                    }
+                    saveData(); renderProjects(); closeModal('projectModal');
+                    showMessage(id ? 'แก้ไขโครงการสำเร็จ' : 'เพิ่มโครงการสำเร็จ');
+                    if(currentView === 'homePage') renderHomePage();
+                });
+            }
+            if (importCsvBtn) {
+                importCsvBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId) { showMessage('กรุณาเลือกปีงบประมาณก่อน', 'error'); return; }
+                    if(csvImportForm) csvImportForm.reset();
+                    openModal('csvImportModal');
+                });
+            }
+            if (csvImportForm) {
+                csvImportForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const file = document.getElementById('csvFile').files[0];
+                    const hasHeader = document.getElementById('csvHasHeader').checked;
+                    if (!file) { showMessage('กรุณาเลือกไฟล์ CSV', 'error'); return; }
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const csvData = event.target.result;
+                        const lines = csvData.split(/\r\n|\n/);
+                        let importedCount = 0; let errorMsgs = [];
+                        let currentProjCount = Object.keys(projects[currentFiscalYearId] || {}).length;
+                        const startIdx = hasHeader ? 1 : 0;
+
+                        for (let i = startIdx; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (line === "") continue;
+                            const parts = line.split(',');
+                            if (parts.length >= 2) {
+                                const name = parts[0].trim();
+                                const budgetStr = parts[1].trim();
+                                const budget = parseFloat(budgetStr);
+                                if (name && budgetStr !== "" && !isNaN(budget) && budget >= 0) {
+                                    const newId = 'proj_' + generateId();
+                                    if (!projects[currentFiscalYearId]) projects[currentFiscalYearId] = {};
+                                    projects[currentFiscalYearId][newId] = { id: newId, sequence_number: currentProjCount + 1, item_name: name, budgeted_amount: budget, fund_type: 'unspecified', createdAt: Date.now() };
+                                    currentProjCount++; importedCount++;
+                                } else { errorMsgs.push(`บรรทัด ${i+1}: ข้อมูลไม่ถูกต้อง`); }
+                            } else { errorMsgs.push(`บรรทัด ${i+1}: รูปแบบไม่ถูกต้อง`); }
+                        }
+                        saveData(); renderProjects(); closeModal('csvImportModal');
+                        let finalMsg = `นำเข้าสำเร็จ ${importedCount} รายการ.`;
+                        if (errorMsgs.length > 0) {
+                            finalMsg += ` พบข้อผิดพลาด ${errorMsgs.length} รายการ (ดู Console).`;
+                            console.warn("CSV Import Errors:\n- " + errorMsgs.join("\n- "));
+                        }
+                        showMessage(finalMsg, errorMsgs.length > 0 && importedCount > 0 ? 'info' : (errorMsgs.length > 0 ? 'error' : 'success'), 5000);
+                        if(currentView === 'homePage') renderHomePage();
+                    };
+                    reader.onerror = () => showMessage('เกิดข้อผิดพลาดในการอ่านไฟล์', 'error');
+                    reader.readAsText(file, 'UTF-8');
+                });
+            }
+
+            // Payment Control
+            if(addPaymentControlBtn) {
+                addPaymentControlBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId) { showMessage('กรุณาเลือกหรือเพิ่มปีงบประมาณก่อน', 'info'); return; }
+                    if(document.getElementById('paymentControlModalTitle')) document.getElementById('paymentControlModalTitle').textContent = 'เพิ่มรายการจ่าย (บจ.)';
+                    if(paymentControlForm) paymentControlForm.reset();
+                    if(document.getElementById('paymentControlId')) document.getElementById('paymentControlId').value = '';
+                    if(document.getElementById('paymentControlDate')) document.getElementById('paymentControlDate').valueAsDate = new Date();
+                    populatePaymentControlProjectDropdown();
+                    openModal('paymentControlModal');
+                });
+            }
+            if(paymentControlForm) {
+                paymentControlForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const id = document.getElementById('paymentControlId').value;
+                    const formData = new FormData(paymentControlForm);
+                    const pcData = Object.fromEntries(formData.entries());
+                    pcData.paymentControlAmount = parseFloat(pcData.paymentControlAmount);
+
+                    if (!pcData.paymentControlNo || !pcData.paymentControlDate || !pcData.paymentControlDescription || !pcData.paymentControlPayee || !pcData.paymentControlProjectId || isNaN(pcData.paymentControlAmount) || pcData.paymentControlAmount <= 0) {
+                        showMessage('กรุณากรอกข้อมูลรายการจ่าย (บจ.) ให้ครบถ้วนและถูกต้อง', 'error'); return;
+                    }
+                    if (!currentFiscalYearId) { showMessage('ไม่ได้เลือกปีงบประมาณ', 'error'); return; }
+                    if (!paymentControls[currentFiscalYearId]) paymentControls[currentFiscalYearId] = {};
+
+                    if (id) {
+                        if (paymentControls[currentFiscalYearId][id]) {
+                            paymentControls[currentFiscalYearId][id] = { ...paymentControls[currentFiscalYearId][id], ...pcData, updatedAt: Date.now() };
+                            showMessage('แก้ไขรายการจ่าย (บจ.) สำเร็จ');
+                        } else { showMessage('ไม่พบรายการจ่ายที่ต้องการแก้ไข', 'error'); return; }
+                    } else {
+                        const newPcId = 'pc_' + generateId();
+                        paymentControls[currentFiscalYearId][newPcId] = { ...pcData, id: newPcId, createdAt: Date.now() };
+                        showMessage('เพิ่มรายการจ่าย (บจ.) สำเร็จ');
+                    }
+                    saveData();
+                    renderPaymentControls();
+                    renderProjects();
+                    if(currentView === 'homePage') renderHomePage();
+                    closeModal('paymentControlModal');
+                });
+            }
+
+            // Loan Agreement
+            if(addLoanAgreementBtn) {
+                addLoanAgreementBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId) { showMessage('กรุณาเลือกหรือเพิ่มปีงบประมาณก่อนทำการเพิ่มสัญญายืมเงิน', 'info'); return; }
+                    if(document.getElementById('loanAgreementModalTitle')) document.getElementById('loanAgreementModalTitle').textContent = 'บันทึกสัญญายืมเงิน (บย.) ใหม่';
+                    if(loanAgreementForm) loanAgreementForm.reset();
+                    if(document.getElementById('loanAgreementId')) document.getElementById('loanAgreementId').value = '';
+                    if(document.getElementById('loanAgreementDate')) document.getElementById('loanAgreementDate').valueAsDate = new Date();
+                    if(document.getElementById('loanDueDate')) document.getElementById('loanDueDate').valueAsDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                    populateLoanProjectDropdown();
+                    openModal('loanAgreementModal');
+                });
+            }
+            if(loanAgreementForm) {
+                loanAgreementForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const editingLoanId = document.getElementById('loanAgreementId').value;
+                    const formData = new FormData(loanAgreementForm);
+                    const newLoanData = Object.fromEntries(formData.entries());
+                    newLoanData.loanAmount = parseFloat(newLoanData.loanAmount);
+
+                    if (!newLoanData.loanAgreementNo || !newLoanData.loanAgreementDate || !newLoanData.loanSubmittedTo ||
+                        !newLoanData.loanBorrowerName || !newLoanData.loanBorrowerPosition || !newLoanData.loanProjectId ||
+                        isNaN(newLoanData.loanAmount) || newLoanData.loanAmount <= 0 ||
+                        !newLoanData.loanPurpose || !newLoanData.loanDueDate) {
+                        showMessage('กรุณากรอกข้อมูลสัญญายืมเงินให้ครบถ้วนและถูกต้อง', 'error'); return;
+                    }
+                    if (!currentFiscalYearId) { showMessage('ไม่ได้เลือกปีงบประมาณ', 'error'); return; }
+                    if (!loanAgreements[currentFiscalYearId]) loanAgreements[currentFiscalYearId] = {};
+
+                    if (editingLoanId) {
+                        const oldLoan = loanAgreements[currentFiscalYearId][editingLoanId];
+                        if (!oldLoan) { showMessage('ไม่พบสัญญายืมเงินเดิมที่ต้องการแก้ไข', 'error'); return; }
+                        loanAgreements[currentFiscalYearId][editingLoanId] = { ...oldLoan, ...newLoanData, updatedAt: Date.now() };
+                        showMessage('แก้ไขสัญญายืมเงินสำเร็จ');
+                    } else {
+                        const newLoanId = 'loan_' + generateId();
+                        loanAgreements[currentFiscalYearId][newLoanId] = { ...newLoanData, id: newLoanId, repayments: [], createdAt: Date.now() };
+                        showMessage('บันทึกสัญญายืมเงินสำเร็จ');
+                    }
+                    saveData();
+                    renderLoanAgreements();
+                    renderProjects();
+                    if(currentView === 'homePage') renderHomePage();
+                    closeModal('loanAgreementModal');
+                });
+            }
+
+            // Loan Repayment
+            if(loanRepaymentForm) {
+                loanRepaymentForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const loanId = document.getElementById('repaymentLoanId').value;
+                    const repaymentDate = document.getElementById('repaymentDate').value;
+                    const repaymentAmount = parseFloat(document.getElementById('repaymentAmount').value);
+                    const repaymentNotes = document.getElementById('repaymentNotes').value.trim();
+
+                    if (!loanId || !repaymentDate || isNaN(repaymentAmount) || repaymentAmount <= 0) { showMessage('กรุณากรอกข้อมูลการคืนเงินให้ถูกต้อง', 'error'); return; }
+                    const loan = loanAgreements[currentFiscalYearId][loanId];
+                    if (!loan) { showMessage('ไม่พบสัญญายืมเงิน', 'error'); return; }
+                    const repaidTotal = calculateLoanRepaidAmount(loan);
+                    if (repaymentAmount > (parseFloat(loan.loanAmount) - repaidTotal + 0.001)) { showMessage('จำนวนเงินที่คืนมากกว่ายอดคงค้าง', 'error'); return; }
+                    if (!loan.repayments) loan.repayments = [];
+                    loan.repayments.push({ id: 'rp_' + generateId(), date: repaymentDate, amount: repaymentAmount, notes: repaymentNotes });
+                    saveData();
+                    renderLoanAgreements();
+                    const newRepaidAmount = calculateLoanRepaidAmount(loan);
+                    const newOutstandingAmount = parseFloat(loan.loanAmount) - newRepaidAmount;
+                    if(document.getElementById('repaymentCurrentBalanceDisplay')) document.getElementById('repaymentCurrentBalanceDisplay').textContent = formatCurrency(newOutstandingAmount);
+                    renderRepaymentHistory(loanId);
+                    loanRepaymentForm.reset();
+                    if(document.getElementById('repaymentDate')) document.getElementById('repaymentDate').valueAsDate = new Date();
+                    showMessage('บันทึกการคืนเงินสำเร็จ');
+                    if(currentView === 'homePage') renderHomePage();
+                });
+            }
+
+            // Loan Repayment Evidence
+            if(loanRepaymentEvidenceForm) {
+                loanRepaymentEvidenceForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(loanRepaymentEvidenceForm);
+                    const evidenceData = Object.fromEntries(formData.entries());
+                    evidenceData.repaymentEvidenceAmount = parseFloat(evidenceData.repaymentEvidenceAmount);
+                    const fileInput = document.getElementById('repaymentEvidenceFile');
+                    evidenceData.fileName = fileInput.files.length > 0 ? fileInput.files[0].name : null;
+
+                    if (!evidenceData.repaymentEvidenceNo || !evidenceData.repaymentEvidenceLoanId || !evidenceData.repaymentEvidenceDate || isNaN(evidenceData.repaymentEvidenceAmount) || evidenceData.repaymentEvidenceAmount <= 0) {
+                        showMessage('กรุณากรอกข้อมูลหลักฐานการคืนเงินให้ครบถ้วนและถูกต้อง', 'error');
+                        return;
+                    }
+                    const targetLoanId = evidenceData.repaymentEvidenceLoanId;
+                    if (!currentFiscalYearId || !loanAgreements[currentFiscalYearId] || !loanAgreements[currentFiscalYearId][targetLoanId]) {
+                        showMessage('ไม่พบสัญญายืมเงินที่เลือก (อาจถูกลบไปแล้ว)', 'error');
+                        return;
+                    }
+                    const targetLoan = loanAgreements[currentFiscalYearId][targetLoanId];
+                    const repaidTotal = calculateLoanRepaidAmount(targetLoan);
+                    if (evidenceData.repaymentEvidenceAmount > (parseFloat(targetLoan.loanAmount) - repaidTotal + 0.001)) {
+                         showMessage('จำนวนเงินที่คืน (ในหลักฐาน บค.) มากกว่ายอดคงค้างของสัญญายืมเงิน', 'error', 5000);
+                         return;
+                    }
+                    if (!loanRepaymentEvidences[currentFiscalYearId]) loanRepaymentEvidences[currentFiscalYearId] = {};
+                    const newEvidenceId = 'evd_' + generateId();
+                    loanRepaymentEvidences[currentFiscalYearId][newEvidenceId] = { id: newEvidenceId, ...evidenceData, createdAt: Date.now() };
+                    if (!targetLoan.repayments) targetLoan.repayments = [];
+                    targetLoan.repayments.push({ id: 'rp_evd_' + newEvidenceId, date: evidenceData.repaymentEvidenceDate, amount: evidenceData.repaymentEvidenceAmount, notes: `ตามหลักฐาน บค. เลขที่ ${evidenceData.repaymentEvidenceNo}` });
+                    saveData();
+                    renderLoanRepaymentEvidences();
+                    renderLoanAgreements();
+                    loanRepaymentEvidenceForm.reset();
+                    populateRepaymentLoanAgreementDropdown();
+                    showMessage('บันทึกหลักฐานการส่งใช้เงินยืม (บค.) สำเร็จแล้ว');
+                    if(currentView === 'homePage') renderHomePage();
+                });
+            }
+
+            // Backup and Import
+            if(backupDataBtn) {
+                backupDataBtn.addEventListener('click', () => {
+                    const dataToBackup = { fiscalYears, projects, loanAgreements, loanRepaymentEvidences, paymentControls, currentFiscalYearId, currentView };
+                    const jsonString = JSON.stringify(dataToBackup, null, 2);
+                    const blob = new Blob([jsonString], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const now = new Date();
+                    const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+                    a.download = `school_finance_backup_${timestamp}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showMessage('Backup ข้อมูลสำเร็จแล้ว');
+                });
+            }
+            if(triggerImportBtn) {
+                triggerImportBtn.addEventListener('click', () => { if(importFile) importFile.click(); });
+            }
+            if(importFile) {
+                importFile.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        if (confirm('การนำเข้าข้อมูลจะเขียนทับข้อมูลปัจจุบันทั้งหมด คุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อ?')) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                try {
+                                    const importedData = JSON.parse(e.target.result);
+                                    if (importedData.fiscalYears && importedData.projects && importedData.loanAgreements && importedData.loanRepaymentEvidences && importedData.paymentControls) {
+                                        fiscalYears = importedData.fiscalYears;
+                                        projects = importedData.projects;
+                                        loanAgreements = importedData.loanAgreements;
+                                        loanRepaymentEvidences = importedData.loanRepaymentEvidences;
+                                        paymentControls = importedData.paymentControls;
+                                        currentFiscalYearId = importedData.currentFiscalYearId || (fiscalYears.length > 0 ? fiscalYears[0].id : null);
+                                        currentView = importedData.currentView || 'homePage';
+                                        saveData();
+                                        renderFiscalYears();
+                                        switchTab(currentView);
+                                        if (tabDropdownNav) tabDropdownNav.value = currentView;
+                                        showMessage('นำเข้าข้อมูลสำเร็จแล้ว');
+                                    } else { showMessage('ไฟล์ Backup ไม่ถูกต้องหรือไม่สมบูรณ์', 'error'); }
+                                } catch (err) {
+                                    showMessage('เกิดข้อผิดพลาดในการอ่านไฟล์ Backup: ' + err.message, 'error');
+                                    console.error("Error parsing imported JSON:", err);
+                                }
+                                importFile.value = '';
+                            };
+                            reader.readAsText(file);
+                        } else { importFile.value = ''; }
+                    }
+                });
+            }
+
+            // PDF and Excel Export Buttons
+            if (printProjectRegisterBtn) {
+                printProjectRegisterBtn.addEventListener('click', () => {
+                    renderProjects();
+                    document.body.classList.add('printing-project-register-portrait');
+                    generatePdf(
+                        'projectRegisterPrintArea',
+                        'projectRegisterPrintFiscalYear',
+                        'ทะเบียนคุมรายงานเงินโครงการ',
+                        'portrait',
+                        'ทะเบียนคุมรายงานเงินโครงการ.pdf',
+                        'printing-project-register'
+                    ).finally(() => {
+                        document.body.classList.remove('printing-project-register-portrait');
+                    });
+                });
+            }
+            if (exportProjectRegisterExcelBtn) {
+                exportProjectRegisterExcelBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId || !projects[currentFiscalYearId]) { showMessage('ไม่มีข้อมูลโครงการสำหรับปีงบประมาณนี้', 'info'); return; }
+                    const data = [];
+                    const headers = ["ลำดับ", "รายการ", "ประเภทเงิน", "จำนวนเงินตามโครงการ (บาท)", "จำนวนเงินที่ใช้ไป (บาท)", "จำนวนเงินคงเหลือ (บาท)"];
+                    Object.values(projects[currentFiscalYearId]).sort((a,b) => (a.sequence_number || Infinity) - (b.sequence_number || Infinity))
+                        .forEach((p, index) => {
+                            const spent = calculateProjectSpentAmount(p.id);
+                            const balance = parseFloat(p.budgeted_amount) - spent;
+                            data.push([p.sequence_number || (index + 1), p.item_name, getFundTypeName(p.fund_type), parseFloat(p.budgeted_amount), spent, balance]);
+                    });
+                    exportToExcel(data, 'ทะเบียนคุมโครงการ', 'ทะเบียนคุมรายงานเงินโครงการ.xlsx', headers);
+                });
+            }
+            if (printPaymentControlBtn) {
+                printPaymentControlBtn.addEventListener('click', () => {
+                    renderPaymentControls();
+                    document.body.classList.add('printing-landscape');
+                    generatePdf('paymentControlPrintArea', 'paymentControlPrintFiscalYear', 'ทะเบียนคุมการจ่าย (บจ.)', 'landscape', 'ทะเบียนคุมการจ่าย_บจ.pdf').finally(() => document.body.classList.remove('printing-landscape'));
+                });
+            }
+            if (exportPaymentControlExcelBtn) {
+                exportPaymentControlExcelBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId || !paymentControls[currentFiscalYearId]) { showMessage('ไม่มีข้อมูลการจ่าย (บจ.) สำหรับปีงบประมาณนี้', 'info'); return; }
+                    const data = [];
+                    const headers = ["เลขที่ บจ.", "วันที่จ่าย", "รายการจ่าย", "จ่ายให้", "จ่ายจากโครงการ", "จำนวนเงิน (บาท)", "หมายเหตุ"];
+                    Object.values(paymentControls[currentFiscalYearId]).sort((a,b) => new Date(b.paymentControlDate) - new Date(a.paymentControlDate))
+                        .forEach(pc => {
+                            const project = projects[currentFiscalYearId]?.[pc.paymentControlProjectId];
+                            data.push([pc.paymentControlNo, formatDateForExcel(pc.paymentControlDate), pc.paymentControlDescription, pc.paymentControlPayee, project ? project.item_name : 'N/A', parseFloat(pc.paymentControlAmount), pc.paymentControlNotes || '']);
+                        });
+                    exportToExcel(data, 'ทะเบียนคุมการจ่าย (บจ.)', 'ทะเบียนคุมการจ่าย_บจ.xlsx', headers);
+                });
+            }
+            if (printLoanAgreementsBtn) {
+                printLoanAgreementsBtn.addEventListener('click', () => {
+                    renderLoanAgreements();
+                    document.body.classList.add('printing-landscape');
+                    generatePdf('loanAgreementsPrintArea', 'loanAgreementsPrintFiscalYear', 'รายการสัญญายืมเงิน (บย.)', 'landscape', 'รายการสัญญายืมเงิน_บย.pdf').finally(() => document.body.classList.remove('printing-landscape'));
+                });
+            }
+            if (exportLoanAgreementsExcelBtn) {
+                exportLoanAgreementsExcelBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId || !loanAgreements[currentFiscalYearId]) { showMessage('ไม่มีข้อมูลสัญญายืมเงิน (บย.) สำหรับปีงบประมาณนี้', 'info'); return; }
+                    const data = [];
+                    const headers = ["เลขที่สัญญา", "วันที่ทำสัญญา", "ชื่อผู้ยืม", "ตำแหน่ง", "สังกัด", "ยื่นต่อ", "ยืมจากโครงการ", "กิจกรรมย่อย", "วัตถุประสงค์", "จำนวนเงินยืม (บาท)", "กำหนดคืน", "ยอดคืนแล้ว", "ยอดคงค้าง"];
+                    Object.values(loanAgreements[currentFiscalYearId]).sort((a,b) => new Date(b.loanAgreementDate) - new Date(a.loanAgreementDate))
+                        .forEach(loan => {
+                            const project = projects[currentFiscalYearId]?.[loan.loanProjectId];
+                            const repaid = calculateLoanRepaidAmount(loan);
+                            data.push([loan.loanAgreementNo, formatDateForExcel(loan.loanAgreementDate), loan.loanBorrowerName, loan.loanBorrowerPosition, loan.loanBorrowerAffiliation || '', loan.loanSubmittedTo, project ? project.item_name : 'N/A', loan.loanSubActivity || '', loan.loanPurpose, parseFloat(loan.loanAmount), formatDateForExcel(loan.loanDueDate), repaid, parseFloat(loan.loanAmount) - repaid]);
+                        });
+                    exportToExcel(data, 'รายการสัญญายืมเงิน (บย.)', 'รายการสัญญายืมเงิน_บย.xlsx', headers);
+                });
+            }
+            if (printLoanRepaymentEvidenceBtn) {
+                printLoanRepaymentEvidenceBtn.addEventListener('click', () => {
+                    renderLoanRepaymentEvidences();
+                    document.body.classList.add('printing-landscape');
+                    generatePdf('loanRepaymentEvidencePrintArea', 'loanRepaymentEvidencePrintFiscalYear', 'รายการหลักฐานส่งใช้เงินยืม (บค.)', 'landscape', 'รายการหลักฐานส่งใช้เงินยืม_บค.pdf').finally(() => document.body.classList.remove('printing-landscape'));
+                });
+            }
+            if (exportLoanRepaymentEvidenceExcelBtn) {
+                exportLoanRepaymentEvidenceExcelBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId || !loanRepaymentEvidences[currentFiscalYearId]) { showMessage('ไม่มีข้อมูลหลักฐานส่งใช้เงินยืม (บค.) สำหรับปีงบประมาณนี้', 'info'); return; }
+                    const data = [];
+                    const headers = ["เลขที่ บค.", "วันที่คืน", "เลขที่สัญญายืม (บย.)", "ผู้ยืม", "จำนวนเงินคืน (บาท)", "ชื่อไฟล์หลักฐาน"];
+                    Object.values(loanRepaymentEvidences[currentFiscalYearId]).sort((a,b) => new Date(b.repaymentEvidenceDate) - new Date(a.repaymentEvidenceDate))
+                        .forEach(evidence => {
+                            const linkedLoan = loanAgreements[currentFiscalYearId]?.[evidence.repaymentEvidenceLoanId];
+                            data.push([evidence.repaymentEvidenceNo, formatDateForExcel(evidence.repaymentEvidenceDate), linkedLoan ? linkedLoan.loanAgreementNo : 'N/A', linkedLoan ? linkedLoan.loanBorrowerName : 'N/A', parseFloat(evidence.repaymentEvidenceAmount), evidence.fileName || '']);
+                        });
+                    exportToExcel(data, 'รายการหลักฐานส่งใช้เงินยืม', 'รายการหลักฐานส่งใช้เงินยืม_บค.xlsx', headers);
+                });
+            }
+            if (printPaymentVoucherRegisterBtn) {
+                printPaymentVoucherRegisterBtn.addEventListener('click', () => {
+                    renderPaymentVoucherRegister();
+                    document.body.classList.add('printing-payment-voucher-register-portrait');
+                    generatePdf('paymentVoucherRegisterPrintArea', 'paymentVoucherRegisterPrintFiscalYear', 'ทะเบียนคุมใบสำคัญจ่าย (บส.)', 'portrait', 'ทะเบียนคุมใบสำคัญจ่าย_บส.pdf', 'printing-payment-voucher-register').finally(() => document.body.classList.remove('printing-payment-voucher-register-portrait'));
+                });
+            }
+            if (exportPaymentVoucherRegisterExcelBtn) {
+                exportPaymentVoucherRegisterExcelBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId) { showMessage('กรุณาเลือกปีงบประมาณ', 'info'); return; }
+                    const data = [];
+                    const headers = ["ว/ด/ป", "เลขที่ บค.", "เลขที่ บจ.", "รายการ", "หมายเหตุ"];
+                    const combinedVouchers = [];
+                    if (loanRepaymentEvidences[currentFiscalYearId]) {
+                        Object.values(loanRepaymentEvidences[currentFiscalYearId]).forEach(ev => {
+                            const linkedLoan = loanAgreements[currentFiscalYearId]?.[ev.repaymentEvidenceLoanId];
+                            combinedVouchers.push({ date: ev.repaymentEvidenceDate, bcNo: ev.repaymentEvidenceNo, bjNo: '-', description: linkedLoan ? `ส่งใช้เงินยืมตามสัญญา บย. เลขที่ ${linkedLoan.loanAgreementNo} (${linkedLoan.loanBorrowerName}) จำนวน ${formatCurrency(ev.repaymentEvidenceAmount)} บาท` : `ส่งใช้เงินยืม (ไม่พบสัญญา บย.) จำนวน ${formatCurrency(ev.repaymentEvidenceAmount)} บาท`, notes: ev.fileName || '-' });
+                        });
+                    }
+                    if (paymentControls[currentFiscalYearId]) {
+                        Object.values(paymentControls[currentFiscalYearId]).forEach(pc => {
+                            const project = projects[currentFiscalYearId]?.[pc.paymentControlProjectId];
+                            combinedVouchers.push({ date: pc.paymentControlDate, bcNo: '-', bjNo: pc.paymentControlNo, description: `${pc.paymentControlDescription} (โครงการ: ${project ? project.item_name : 'N/A'}) จำนวน ${formatCurrency(pc.paymentControlAmount)} บาท จ่ายให้ ${pc.paymentControlPayee}`, notes: pc.paymentControlNotes || '-' });
+                        });
+                    }
+                    combinedVouchers.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    combinedVouchers.forEach(v => data.push([formatDateForExcel(v.date), v.bcNo, v.bjNo, v.description, v.notes]));
+                    exportToExcel(data, 'ทะเบียนคุมใบสำคัญจ่าย', 'ทะเบียนคุมใบสำคัญจ่าย_บส.xlsx', headers);
+                });
+            }
+            if (printLoanDebtorRegisterBtn) {
+                printLoanDebtorRegisterBtn.addEventListener('click', () => {
+                    renderLoanDebtorRegister();
+                    document.body.classList.add('printing-landscape');
+                    generatePdf('loanDebtorRegisterPrintArea', 'printFiscalYearInfo', 'ทะเบียนคุมลูกหนี้เงินยืม', 'landscape', 'ทะเบียนคุมลูกหนี้เงินยืม.pdf').finally(() => document.body.classList.remove('printing-landscape'));
+                });
+            }
+            if (exportLoanDebtorRegisterExcelBtn) {
+                exportLoanDebtorRegisterExcelBtn.addEventListener('click', () => {
+                    if (!currentFiscalYearId || !loanAgreements[currentFiscalYearId]) { showMessage('ไม่มีข้อมูลลูกหนี้เงินยืมสำหรับปีงบประมาณนี้', 'info'); return; }
+                    const data = [];
+                    const headers = ["ว/ด/ป (สัญญา)", "เลขที่สัญญา (บย.)", "ชื่อสกุลผู้ยืม", "ยืมจากโครงการ", "วัตถุประสงค์", "จำนวนเงินยืม (บาท)", "วันครบกำหนด", "วันส่งใช้ล่าสุด", "ยอดคืนแล้วทั้งหมด (บาท)", "ยอดคงค้าง (บาท)"];
+                    Object.values(loanAgreements[currentFiscalYearId]).sort((a,b) => new Date(b.loanAgreementDate) - new Date(a.loanAgreementDate))
+                        .forEach(loan => {
+                            const project = projects[currentFiscalYearId]?.[loan.loanProjectId];
+                            const repaid = calculateLoanRepaidAmount(loan);
+                            const outstanding = parseFloat(loan.loanAmount) - repaid;
+                            let lastRepayDate = 'N/A';
+                            if (loan.repayments && loan.repayments.length > 0) {
+                                lastRepayDate = formatDateForExcel(loan.repayments.sort((a,b) => new Date(b.date) - new Date(a.date))[0].date);
+                            }
+                            data.push([formatDateForExcel(loan.loanAgreementDate), loan.loanAgreementNo, loan.loanBorrowerName, project ? project.item_name : 'N/A', loan.loanPurpose || '', parseFloat(loan.loanAmount), formatDateForExcel(loan.loanDueDate), lastRepayDate, repaid, outstanding]);
+                        });
+                    exportToExcel(data, 'ทะเบียนคุมลูกหนี้เงินยืม', 'ทะเบียนคุมลูกหนี้เงินยืม.xlsx', headers);
+                });
+            }
+
+            // Event listener for the main navigation dropdown
+            if (tabDropdownNav) {
+                tabDropdownNav.addEventListener('change', (e) => {
+                    switchTab(e.target.value);
+                });
+            }
+        });
+
+        // --- Home Page Graph Rendering ---
+        function renderHomePage() {
+            if (!currentFiscalYearId) {
+                if(homeFiscalYearDisplay) homeFiscalYearDisplay.textContent = 'กรุณาเลือกหรือเพิ่มปีงบประมาณ';
+                if (overallBudgetChartInstance) overallBudgetChartInstance.destroy();
+                if (fundTypeProjectChartInstance) fundTypeProjectChartInstance.destroy();
+                return;
+            }
+
+            const currentFYObject = fiscalYears.find(fy => fy.id === currentFiscalYearId);
+            if(homeFiscalYearDisplay) homeFiscalYearDisplay.textContent = currentFYObject ? currentFYObject.name : 'N/A';
+
+            let totalBudgeted = 0;
+            let totalSpentOverall = 0;
+            const fundTypeData = {};
+
+            if (projects[currentFiscalYearId]) {
+                Object.values(projects[currentFiscalYearId]).forEach(project => {
+                    const budgeted = parseFloat(project.budgeted_amount || 0);
+                    const spent = calculateProjectSpentAmount(project.id);
+
+                    totalBudgeted += budgeted;
+                    totalSpentOverall += spent;
+
+                    const fundTypeName = getFundTypeName(project.fund_type);
+                    if (!fundTypeData[fundTypeName]) {
+                        fundTypeData[fundTypeName] = { budgeted: 0, spent: 0 };
+                    }
+                    fundTypeData[fundTypeName].budgeted += budgeted;
+                    fundTypeData[fundTypeName].spent += spent;
+                });
+            }
+            const totalRemaining = totalBudgeted - totalSpentOverall;
+
+            if (overallBudgetChartInstance) {
+                overallBudgetChartInstance.destroy();
+            }
+            const ctxOverall = document.getElementById('overallBudgetChart').getContext('2d');
+            overallBudgetChartInstance = new Chart(ctxOverall, {
+                type: 'bar',
+                data: {
+                    labels: ['งบประมาณทั้งหมด', 'ใช้ไปทั้งหมด', 'คงเหลือทั้งหมด'],
+                    datasets: [{
+                        label: 'จำนวนเงิน (บาท)',
+                        data: [totalBudgeted, totalSpentOverall, totalRemaining],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(255, 99, 132, 0.6)',
+                            'rgba(75, 192, 192, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(75, 192, 192, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            const fundTypeLabels = Object.keys(fundTypeData);
+            const fundTypeBudgetedValues = fundTypeLabels.map(label => fundTypeData[label].budgeted);
+
+            if (fundTypeProjectChartInstance) {
+                fundTypeProjectChartInstance.destroy();
+            }
+            const ctxFundTypeProject = document.getElementById('fundTypeProjectChart').getContext('2d');
+            fundTypeProjectChartInstance = new Chart(ctxFundTypeProject, {
+                type: 'doughnut',
+                data: {
+                    labels: fundTypeLabels,
+                    datasets: [{
+                        label: 'งบประมาณตามประเภทเงิน',
+                        data: fundTypeBudgetedValues,
+                        backgroundColor: [
+                            'rgba(255, 159, 64, 0.7)', 'rgba(255, 205, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)', 'rgba(54, 162, 235, 0.7)',
+                            'rgba(153, 102, 255, 0.7)', 'rgba(201, 203, 207, 0.7)'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: false, text: 'สัดส่วนงบประมาณโครงการตามประเภทเงิน' }
+                    }
+                }
+            });
+        }
+
+
+        // --- Initialization ---
+        function initApp() {
+            loadData();
+            renderFiscalYears();
+            switchTab(currentView); // Switch to the last saved view or default
+            if (tabDropdownNav) { // Set dropdown to current view on initial load
+                tabDropdownNav.value = currentView;
+            }
+            if (fiscalYears.length === 0) {
+                showMessage('ยังไม่มีปีงบประมาณ กรุณาเพิ่มปีงบประมาณใหม่เพื่อเริ่มต้นใช้งาน', 'info', 5000);
+            }
+        }
+
+        // --- Backup and Import ---
+        backupDataBtn.addEventListener('click', () => {
+            const dataToBackup = {
+                fiscalYears,
+                projects,
+                loanAgreements,
+                loanRepaymentEvidences,
+                paymentControls,
+                currentFiscalYearId,
+                currentView
+            };
+            const jsonString = JSON.stringify(dataToBackup, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+            a.download = `school_finance_backup_${timestamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showMessage('Backup ข้อมูลสำเร็จแล้ว');
+        });
+
+        triggerImportBtn.addEventListener('click', () => {
+            importFile.click();
+        });
+
+        importFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (confirm('การนำเข้าข้อมูลจะเขียนทับข้อมูลปัจจุบันทั้งหมด คุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อ?')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const importedData = JSON.parse(e.target.result);
+                            if (importedData.fiscalYears && importedData.projects && importedData.loanAgreements && importedData.loanRepaymentEvidences && importedData.paymentControls) {
+                                fiscalYears = importedData.fiscalYears;
+                                projects = importedData.projects;
+                                loanAgreements = importedData.loanAgreements;
+                                loanRepaymentEvidences = importedData.loanRepaymentEvidences;
+                                paymentControls = importedData.paymentControls;
+                                currentFiscalYearId = importedData.currentFiscalYearId || (fiscalYears.length > 0 ? fiscalYears[0].id : null);
+                                currentView = importedData.currentView || 'homePage';
+                                saveData();
+                                renderFiscalYears();
+                                switchTab(currentView); // Ensure UI updates to the imported view
+                                if (tabDropdownNav) tabDropdownNav.value = currentView; // Update dropdown
+                                showMessage('นำเข้าข้อมูลสำเร็จแล้ว');
+                            } else {
+                                showMessage('ไฟล์ Backup ไม่ถูกต้องหรือไม่สมบูรณ์', 'error');
+                            }
+                        } catch (err) {
+                            showMessage('เกิดข้อผิดพลาดในการอ่านไฟล์ Backup: ' + err.message, 'error');
+                            console.error("Error parsing imported JSON:", err);
+                        }
+                        importFile.value = '';
+                    };
+                    reader.readAsText(file);
+                } else {
+                    importFile.value = '';
+                }
+            }
+        });
+
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
